@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const authRoutes = require("./routes/authRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const statsRoutes = require('./routes/statsRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -41,9 +42,18 @@ app.get("/", (req, res) => {
     status: "running",
   });
 });
+
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
