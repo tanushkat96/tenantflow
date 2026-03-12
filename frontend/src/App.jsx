@@ -3,6 +3,8 @@ import { Toaster } from 'react-hot-toast';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/dashboard/Dashboard';
+import Projects from './pages/projects/Projects';
+import Tasks from './pages/tasks/Tasks';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
@@ -30,7 +32,7 @@ function App() {
           path="/projects"
           element={
             <ProtectedRoute>
-              <div className="p-8">Projects page - Coming soon!</div>
+              <Projects />
             </ProtectedRoute>
           }
         />
@@ -38,7 +40,7 @@ function App() {
           path="/tasks"
           element={
             <ProtectedRoute>
-              <div className="p-8">Tasks page - Coming soon!</div>
+              <Tasks/>
             </ProtectedRoute>
           }
         />

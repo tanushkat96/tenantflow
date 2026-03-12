@@ -1,11 +1,11 @@
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { logout } from '../../redux/slices/authSlice';
-import { Menu, Search, Bell, User, LogOut } from 'lucide-react';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../../redux/slices/authSlice";
+import { Menu, Search, Bell, User, LogOut, ChevronLeft } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
-function Header({ toggleSidebar }) {
+function Header({ toggleSidebar, toggleCollapse, sidebarCollapsed }) {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -13,8 +13,8 @@ function Header({ toggleSidebar }) {
 
   const handleLogout = () => {
     dispatch(logout());
-    toast.success('Logged out successfully');
-    navigate('/login');
+    toast.success("Logged out successfully");
+    navigate("/login");
   };
 
   return (
@@ -28,6 +28,17 @@ function Header({ toggleSidebar }) {
             className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
           >
             <Menu className="w-6 h-6 text-gray-600" />
+          </button>
+
+          {/* Desktop collapse button */}
+          <button
+            onClick={toggleCollapse}
+            className="hidden lg:flex p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            title="Toggle sidebar"
+          >
+            <ChevronLeft
+              className={`w-6 h-6 text-gray-600 transition-transform duration-300 ${sidebarCollapsed ? "rotate-180" : ""}`}
+            />
           </button>
 
           {/* Logo */}
@@ -63,7 +74,8 @@ function Header({ toggleSidebar }) {
               className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100"
             >
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                {user?.firstName?.charAt(0)}
+                {user?.lastName?.charAt(0)}
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-700">
@@ -79,7 +91,7 @@ function Header({ toggleSidebar }) {
                 <button
                   onClick={() => {
                     setShowDropdown(false);
-                    navigate('/profile');
+                    navigate("/profile");
                   }}
                   className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >

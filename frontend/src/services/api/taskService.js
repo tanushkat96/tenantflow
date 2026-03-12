@@ -25,9 +25,9 @@ const taskService = {
     return response.data;
   },
 
-  // Update task status
-  updateTaskStatus: async (id, data) => {
-    const response = await axiosInstance.patch(`/tasks/${id}/status`, data);
+   // Update task status (for drag-and-drop)
+  updateTaskStatus: async (id, status) => {
+    const response = await axiosInstance.patch(`/tasks/${id}/status`, { status });
     return response.data;
   },
 

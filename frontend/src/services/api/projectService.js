@@ -30,6 +30,21 @@ const projectService = {
     const response = await axiosInstance.delete(`/projects/${id}`);
     return response.data;
   },
+
+  // Add member to project
+  addMember: async (projectId, userId, role) => {
+    const response = await axiosInstance.post(`/projects/${projectId}/members`, {
+      userId,
+      role
+    });
+    return response.data;
+  },
+
+  // Remove member from project
+  removeMember: async (projectId, memberId) => {
+    const response = await axiosInstance.delete(`/projects/${projectId}/members/${memberId}`);
+    return response.data;
+  },
 };
 
 export default projectService;
