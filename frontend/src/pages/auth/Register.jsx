@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
-import { loginStart, loginSuccess, loginFailure } from '../../redux/slices/authSlice';
-import authService from '../../services/api/authService';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+} from "../../redux/slices/authSlice";
+import authService from "../../services/api/authService";
+import toast from "react-hot-toast";
 
 function Register() {
   const dispatch = useDispatch();
@@ -11,13 +15,13 @@ function Register() {
   const { loading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    organizationName: '',
-    subdomain: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    organizationName: "",
+    subdomain: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const handleChange = (e) => {
@@ -32,13 +36,13 @@ function Register() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Passwords do not match");
       return;
     }
 
     // Validate password length
     if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error("Password must be at least 6 characters");
       return;
     }
 
@@ -48,15 +52,18 @@ function Register() {
       const { confirmPassword: _, ...registerData } = formData;
       const response = await authService.register(registerData);
 
-      dispatch(loginSuccess({
-        user: response.data.user,
-        token: response.data.token,
-      }));
+      dispatch(
+        loginSuccess({
+          user: response.data.user,
+          token: response.data.token,
+        }),
+      );
 
-      toast.success('Registration successful!');
-      navigate('/dashboard');
+      toast.success("Registration successful!");
+      navigate("/dashboard");
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      const errorMessage =
+        error.response?.data?.message || "Registration failed";
       dispatch(loginFailure(errorMessage));
       toast.error(errorMessage);
     }
@@ -71,8 +78,11 @@ function Register() {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="font-medium text-primary hover:text-primary/90">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-medium text-primary hover:text-primary/90"
+            >
               Sign in
             </Link>
           </p>
@@ -83,7 +93,10 @@ function Register() {
           <div className="space-y-4">
             {/* Organization Name */}
             <div>
-              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="organizationName"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Organization Name
               </label>
               <input
@@ -100,7 +113,10 @@ function Register() {
 
             {/* Subdomain */}
             <div>
-              <label htmlFor="subdomain" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="subdomain"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Subdomain
               </label>
               <input
@@ -113,13 +129,19 @@ function Register() {
                 className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                 placeholder="acme"
               />
-              <p className="mt-1 text-xs text-gray-500">Your workspace URL will be: {formData.subdomain || 'subdomain'}.tenantflow.com</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Your workspace URL will be: {formData.subdomain || "subdomain"}
+                .tenantflow.com
+              </p>
             </div>
 
             {/* First Name & Last Name */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="firstName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   First Name
                 </label>
                 <input
@@ -134,7 +156,10 @@ function Register() {
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="lastName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Last Name
                 </label>
                 <input
@@ -152,7 +177,10 @@ function Register() {
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Email address
               </label>
               <input
@@ -169,7 +197,10 @@ function Register() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Password
               </label>
               <input
@@ -186,7 +217,10 @@ function Register() {
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Confirm Password
               </label>
               <input
@@ -218,14 +252,30 @@ function Register() {
             >
               {loading ? (
                 <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Creating account...
                 </span>
               ) : (
-                'Create account'
+                "Create account"
               )}
             </button>
           </div>

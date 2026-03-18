@@ -1,50 +1,66 @@
-import { X } from 'lucide-react';
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import userService from "../../services/api/userService";
 
 function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
-  const { projects } = useSelector(state => state.projects);
-  const { user } = useSelector(state => state.auth);
+  const { projects } = useSelector((state) => state.projects);
+  const { user } = useSelector((state) => state.auth);
 
-   const [formData, setFormData] = useState({
-    title: task?.title || '',
-    description: task?.description || '',
-    projectId: task?.projectId?._id || task?.projectId || '',
-    status: task?.status || defaultStatus || 'todo',
-    priority: task?.priority || 'medium',
-    assignee: task?.assignee?._id || task?.assignee || '',
-    dueDate: task?.dueDate ? task.dueDate.split('T')[0] : '',
+  const [formData, setFormData] = useState({
+    title: task?.title || "",
+    description: task?.description || "",
+    projectId: task?.projectId?._id || task?.projectId || "",
+    status: task?.status || defaultStatus || "todo",
+    priority: task?.priority || "medium",
+    assignee: task?.assignee?._id || task?.assignee || "",
+    dueDate: task?.dueDate ? task.dueDate.split("T")[0] : "",
     labels: task?.labels || [],
   });
 
   const [errors, setErrors] = useState({});
-  const [labelInput, setLabelInput] = useState('');
+  const [labelInput, setLabelInput] = useState("");
+  const [teamMembers, setTeamMembers] = useState([]);
 
+  // Fetch team members when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const fetchTeamMembers = async () => {
+        try {
+          const response = await userService.getAllUsers();
+          setTeamMembers(response.data || []);
+        } catch (error) {
+          console.error("Failed to fetch team members:", error);
+        }
+      };
+      fetchTeamMembers();
+    }
+  }, [isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleAddLabel = (e) => {
     e.preventDefault();
     if (labelInput.trim() && !formData.labels.includes(labelInput.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        labels: [...prev.labels, labelInput.trim()]
+        labels: [...prev.labels, labelInput.trim()],
       }));
-      setLabelInput('');
+      setLabelInput("");
     }
   };
 
   const handleRemoveLabel = (labelToRemove) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      labels: prev.labels.filter(label => label !== labelToRemove)
+      labels: prev.labels.filter((label) => label !== labelToRemove),
     }));
   };
 
@@ -52,11 +68,11 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
     const newErrors = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = 'Task title is required';
+      newErrors.title = "Task title is required";
     }
 
     if (!formData.projectId) {
-      newErrors.projectId = 'Please select a project';
+      newErrors.projectId = "Please select a project";
     }
 
     setErrors(newErrors);
@@ -80,7 +96,7 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            {task ? 'Edit Task' : 'Create New Task'}
+            {task ? "Edit Task" : "Create New Task"}
           </h2>
           <button
             onClick={onClose}
@@ -103,7 +119,7 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
               value={formData.title}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
+                errors.title ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="e.g., Design homepage mockup"
             />
@@ -139,7 +155,7 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
                 value={formData.projectId}
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.projectId ? 'border-red-500' : 'border-gray-300'
+                  errors.projectId ? "border-red-500" : "border-gray-300"
                 }`}
               >
                 <option value="">Select project</option>
@@ -220,10 +236,12 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Unassigned</option>
-              {user && (<option value={user._id}>
-                {user.firstName} {user.lastName} (Me)
-              </option>
-              )}i
+              {teamMembers.map((member) => (
+                <option key={member._id} value={member._id}>
+                  {member.firstName} {member.lastName}
+                  {member._id === user?._id ? " (Me)" : ""}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -238,7 +256,7 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
                 value={labelInput}
                 onChange={(e) => setLabelInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     handleAddLabel(e);
                   }
                 }}
@@ -283,9 +301,9 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+              className="px-4 py-2 text-white bg-primary rounded-lg hover:bg-gray-300 transition"
             >
-              {task ? 'Update Task' : 'Create Task'}
+              {task ? "Update Task" : "Create Task"}
             </button>
           </div>
         </form>

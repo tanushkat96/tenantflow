@@ -1,20 +1,21 @@
-import { MoreVertical, Users, CheckCircle } from 'lucide-react';
-import { useState } from 'react';
+import { MoreVertical, Users, CheckCircle } from "lucide-react";
+import { useState } from "react";
 
 function ProjectCard({ project, onEdit, onDelete }) {
   const [showMenu, setShowMenu] = useState(false);
 
-  // Calculate task statistics
-  const totalTasks = project.taskCount || 0;
-  const completedTasks = project.completedTasks || 0;
-  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  // Get progress data from the API response
+  const progress = project.progress || {};
+  const totalTasks = progress.total || 0;
+  const completedTasks = progress.completed || 0;
+  const progressPercentage = progress.progressPercentage || 0;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow p-6 relative">
       {/* Project Color Bar */}
-      <div 
+      <div
         className="absolute top-0 left-0 right-0 h-1 rounded-t-lg"
-        style={{ backgroundColor: project.color || '#3B82F6' }}
+        style={{ backgroundColor: project.color || "#3B82F6" }}
       />
 
       {/* Header */}
@@ -40,8 +41,8 @@ function ProjectCard({ project, onEdit, onDelete }) {
           {/* Dropdown Menu */}
           {showMenu && (
             <>
-              <div 
-                className="fixed inset-0 z-10" 
+              <div
+                className="fixed inset-0 z-10"
                 onClick={() => setShowMenu(false)}
               />
               <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
@@ -97,11 +98,15 @@ function ProjectCard({ project, onEdit, onDelete }) {
         </div>
 
         {/* Status Badge */}
-        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-          project.status === 'active' ? 'bg-green-100 text-green-800' :
-          project.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
+        <span
+          className={`text-xs px-2 py-1 rounded-full font-medium ${
+            project.status === "active"
+              ? "bg-green-100 text-green-800"
+              : project.status === "completed"
+                ? "bg-blue-100 text-blue-800"
+                : "bg-gray-100 text-gray-800"
+          }`}
+        >
           {project.status}
         </span>
       </div>
@@ -110,14 +115,14 @@ function ProjectCard({ project, onEdit, onDelete }) {
       <div className="space-y-1">
         <div className="flex items-center justify-between text-xs text-gray-600">
           <span>Progress</span>
-          <span className="font-medium">{progress}%</span>
+          <span className="font-medium">{progressPercentage}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div
             className="h-2 rounded-full transition-all"
-            style={{ 
-              width: `${progress}%`,
-              backgroundColor: project.color || '#3B82F6'
+            style={{
+              width: `${progressPercentage}%`,
+              backgroundColor: project.color || "#3B82F6",
             }}
           />
         </div>

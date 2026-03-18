@@ -1,9 +1,9 @@
-import axiosInstance from './axios';
+import axiosInstance from "./axios";
 
 const projectService = {
   // Get all projects
   getAllProjects: async () => {
-    const response = await axiosInstance.get('/projects');
+    const response = await axiosInstance.get("/projects");
     return response.data;
   },
 
@@ -15,7 +15,7 @@ const projectService = {
 
   // Create project
   createProject: async (data) => {
-    const response = await axiosInstance.post('/projects', data);
+    const response = await axiosInstance.post("/projects", data);
     return response.data;
   },
 
@@ -33,16 +33,27 @@ const projectService = {
 
   // Add member to project
   addMember: async (projectId, userId, role) => {
-    const response = await axiosInstance.post(`/projects/${projectId}/members`, {
-      userId,
-      role
-    });
+    const response = await axiosInstance.post(
+      `/projects/${projectId}/members`,
+      {
+        userId,
+        role,
+      },
+    );
     return response.data;
   },
 
   // Remove member from project
   removeMember: async (projectId, memberId) => {
-    const response = await axiosInstance.delete(`/projects/${projectId}/members/${memberId}`);
+    const response = await axiosInstance.delete(
+      `/projects/${projectId}/members/${memberId}`,
+    );
+    return response.data;
+  },
+
+  // Get project progress
+  getProjectProgress: async (projectId) => {
+    const response = await axiosInstance.get(`/projects/${projectId}/progress`);
     return response.data;
   },
 };
