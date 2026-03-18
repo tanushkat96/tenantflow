@@ -120,43 +120,53 @@ function InviteModal({ isOpen, onClose, onInvite, inviteLink }) {
             </select>
           </div>
 
-          {/* Invite Link Display */}
-          {inviteLink && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-blue-900 mb-2">
-                Invitation Link Generated
-              </p>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={inviteLink}
-                  readOnly
-                  className="flex-1 px-3 py-2 bg-white border border-blue-200 rounded text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-gray-300 transition flex items-center space-x-1"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span className="text-sm">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      <span className="text-sm">Copy</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              <p className="text-xs text-blue-700 mt-2">
-                Share this link with the person you want to invite. Link expires
-                in 7 days.
-              </p>
-            </div>
+        
+{inviteLink && (
+  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+    <p className="text-sm font-medium text-green-900 mb-2">
+      ✅ Invitation Email Sent Successfully!
+    </p>
+    <p className="text-sm text-green-700 mb-3">
+      An invitation email has been sent to <strong>{formData.email}</strong> with instructions to join your team.
+    </p>
+    
+    {/* Optional: Still show link for manual sharing */}
+    <details className="mt-3">
+      <summary className="text-sm text-green-800 cursor-pointer hover:text-green-900">
+        Show invitation link (for manual sharing)
+      </summary>
+      <div className="mt-2 flex items-center space-x-2">
+        <input
+          type="text"
+          value={inviteLink}
+          readOnly
+          className="flex-1 px-3 py-2 bg-white border border-green-200 rounded text-sm"
+        />
+        <button
+          type="button"
+          onClick={handleCopyLink}
+          className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center space-x-1"
+        >
+          {copied ? (
+            <>
+              <Check className="w-4 h-4" />
+              <span className="text-sm">Copied</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-4 h-4" />
+              <span className="text-sm">Copy</span>
+            </>
           )}
+        </button>
+      </div>
+    </details>
+    
+    <p className="text-xs text-green-600 mt-3">
+      The recipient will receive an email with all necessary information to join.
+    </p>
+  </div>
+)}
 
           {/* Buttons */}
           <div className="flex items-center justify-end space-x-3 pt-4">

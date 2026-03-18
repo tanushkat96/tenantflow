@@ -6,31 +6,31 @@ function StatsCard({
   icon: IconComponent,
   trend,
   trendValue,
-  color = "blue",
+  color = "primary",
 }) {
   const colorClasses = {
-    blue: "bg-blue-500",
-    green: "bg-green-500",
-    purple: "bg-purple-500",
-    orange: "bg-orange-500",
+    primary: "text-primary",
+    secondary: "text-secondary",
+    accent: "text-accent",
+    success: "text-green-500",
   };
 
   const bgColorClasses = {
-    blue: "bg-blue-50",
-    green: "bg-green-50",
-    purple: "bg-purple-50",
-    orange: "bg-orange-50",
+    primary: "bg-primary/10",
+    secondary: "bg-secondary/10",
+    accent: "bg-accent/10",
+    success: "bg-green-50",
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+    <div className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-lg transition">
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
           <h3 className="text-3xl font-bold text-gray-900">{value}</h3>
 
           {trend && (
-            <div className="flex items-center mt-2">
+            <div className="flex items-center mt-2 ">
               {trend === "up" ? (
                 <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
               ) : (

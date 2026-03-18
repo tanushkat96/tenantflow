@@ -5,6 +5,8 @@ import {
   Navigate,
 } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import { useSelector } from "react-redux";
+import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -12,15 +14,23 @@ import Projects from "./pages/projects/Projects";
 import Tasks from "./pages/tasks/Tasks";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import Team from "./pages/team/Team";
-import AcceptInvite from "./pages/team/AcceptInvite";
+import AcceptInvite from "./pages/auth/AcceptInvitation";
 
 function App() {
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+
   return (
     <Router>
       <Toaster position="top-right" />
 
       <Routes>
         {/* Public Routes */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/accept-invite/:token" element={<AcceptInvite />} />
@@ -69,11 +79,8 @@ function App() {
           }
         />
 
-        {/* Redirect root to dashboard if logged in, otherwise to login */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
         {/* 404 */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

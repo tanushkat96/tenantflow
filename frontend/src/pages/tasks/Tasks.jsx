@@ -235,7 +235,7 @@ function Tasks() {
           </div>
           <button
             onClick={() => handleAddTask("todo")}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent transition"
           >
             <Plus className="w-5 h-5" />
             <span>New Task</span>

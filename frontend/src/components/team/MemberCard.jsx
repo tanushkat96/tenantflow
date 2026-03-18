@@ -31,7 +31,7 @@ function MemberCard({ member, currentUser, onChangeRole, onRemove }) {
         {/* User Info */}
         <div className="flex items-center space-x-4 flex-1">
           {/* Avatar */}
-          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-lg">
             {member.firstName?.charAt(0)}
             {member.lastName?.charAt(0)}
           </div>

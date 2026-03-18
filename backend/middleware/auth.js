@@ -39,6 +39,8 @@ exports.protect = async (req, res, next) => {
       tenantId: decoded.tenantId,
       role: user.role,
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
     };
 
     next();

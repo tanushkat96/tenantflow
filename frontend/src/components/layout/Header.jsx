@@ -47,7 +47,7 @@ function Header({ toggleSidebar, toggleCollapse, sidebarCollapsed }) {
           </div>
 
           {/* Search bar (Desktop) */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex ali items-center pl-12">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input

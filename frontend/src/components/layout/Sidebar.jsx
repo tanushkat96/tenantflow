@@ -99,18 +99,18 @@ function Sidebar({ isOpen, toggleSidebar, isCollapsed }) {
           className={`p-4 border-t border-gray-200 flex-shrink-0 ${isCollapsed ? "flex justify-center" : ""}`}
         >
           {!isCollapsed && (
-            <div className="bg-blue-50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-blue-900 mb-1">
+            <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg p-3 border border-primary/20">
+              <p className="text-xs font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1">
                 Need Help?
               </p>
-              <p className="text-xs text-blue-700">
+              <p className="text-xs text-gray-600">
                 Check out our documentation
               </p>
             </div>
           )}
           {isCollapsed && (
             <div className="w-full flex justify-center">
-              <div className="w-8 h-8 bg-blue-50 rounded-lg"></div>
+              <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg border border-primary/20"></div>
             </div>
           )}
         </div>

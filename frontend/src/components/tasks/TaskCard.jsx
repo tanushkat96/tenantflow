@@ -1,7 +1,7 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { MoreVertical, Calendar, User } from 'lucide-react';
-import { useState } from 'react';
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { MoreVertical, Calendar, User } from "lucide-react";
+import { useState } from "react";
 
 function TaskCard({ task, onEdit, onDelete }) {
   const [showMenu, setShowMenu] = useState(false);
@@ -22,10 +22,10 @@ function TaskCard({ task, onEdit, onDelete }) {
   };
 
   const priorityColors = {
-    low: 'bg-gray-100 text-gray-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-orange-100 text-orange-800',
-    urgent: 'bg-red-100 text-red-800',
+    low: "bg-gray-100 text-gray-800",
+    medium: "bg-accent/20 text-primary",
+    high: "bg-orange-100 text-orange-800",
+    urgent: "bg-red-100 text-red-800",
   };
 
   return (
@@ -56,8 +56,8 @@ function TaskCard({ task, onEdit, onDelete }) {
 
           {showMenu && (
             <>
-              <div 
-                className="fixed inset-0 z-10" 
+              <div
+                className="fixed inset-0 z-10"
                 onClick={() => setShowMenu(false)}
               />
               <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
@@ -96,7 +96,9 @@ function TaskCard({ task, onEdit, onDelete }) {
 
       {/* Priority Badge */}
       <div className="mb-3">
-        <span className={`text-xs px-2 py-1 rounded-full font-medium ${priorityColors[task.priority]}`}>
+        <span
+          className={`text-xs px-2 py-1 rounded-full font-medium ${priorityColors[task.priority]}`}
+        >
           {task.priority}
         </span>
       </div>
@@ -114,8 +116,9 @@ function TaskCard({ task, onEdit, onDelete }) {
         {/* Assignee */}
         {task.assignee && (
           <div className="flex items-center space-x-1">
-            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-              {task.assignee.firstName?.charAt(0)}{task.assignee.lastName?.charAt(0)}
+            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-xs font-semibold">
+              {task.assignee.firstName?.charAt(0)}
+              {task.assignee.lastName?.charAt(0)}
             </div>
           </div>
         )}
@@ -127,7 +130,7 @@ function TaskCard({ task, onEdit, onDelete }) {
           {task.labels.slice(0, 2).map((label, index) => (
             <span
               key={index}
-              className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded"
+              className="text-xs px-2 py-0.5 bg-gray-400 text-white rounded"
             >
               {label}
             </span>

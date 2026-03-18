@@ -1,6 +1,10 @@
 const User = require("../models/User");
 const Invitation = require("../models/Invitation");
 const crypto = require("crypto");
+const Tenant = require('../models/Tenant');
+const { sendInvitationEmail } = require('../utils/emailService');
+
+
 
 // @desc    Get all users in tenant
 // @route   GET /api/users
@@ -52,18 +56,19 @@ exports.getPendingInvitations = async (req, res) => {
   }
 };
 
+
 // @desc    Invite a new user
 // @route   POST /api/users/invite
 // @access  Private (Owner/Admin)
 exports.inviteUser = async (req, res) => {
   try {
     const { email, role } = req.body;
-    console.log("Invite request:", { email, role, userId: req.user._id });
+
     // Check if user has permission to invite
-    if (req.user.role !== "owner" && req.user.role !== "admin") {
+    if (req.user.role !== 'owner' && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: "Only owners and admins can invite users",
+        message: 'Only owners and admins can invite users',
       });
     }
 
@@ -76,7 +81,7 @@ exports.inviteUser = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User with this email already exists in your organization",
+        message: 'User with this email already exists in your organization',
       });
     }
 
@@ -84,20 +89,29 @@ exports.inviteUser = async (req, res) => {
     const existingInvitation = await Invitation.findOne({
       tenantId: req.user.tenantId,
       email,
-      status: "pending",
+      status: 'pending',
     });
 
     if (existingInvitation) {
       return res.status(400).json({
         success: false,
-        message: "Invitation already sent to this email",
+        message: 'Invitation already sent to this email',
+      });
+    }
+
+    // Get tenant information
+    const tenant = await Tenant.findById(req.user.tenantId);
+
+    if (!tenant) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organization not found',
       });
     }
 
     // Generate unique token
-    const token = crypto.randomBytes(32).toString("hex");
+    const token = crypto.randomBytes(32).toString('hex');
 
-    console.log("Creating invitation with token:", token);
     // Create invitation
     const invitation = await Invitation.create({
       tenantId: req.user.tenantId,
@@ -107,23 +121,38 @@ exports.inviteUser = async (req, res) => {
       token,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     });
-    console.log("Invitation created:", invitation);
 
-    res.status(201).json({
-      success: true,
-      data: invitation,
-      message: "Invitation created successfully",
-    });
+    // ✅ SEND EMAIL
+    try {
+      await sendInvitationEmail({
+        toEmail: email,
+        inviterName: `${req.user.firstName} ${req.user.lastName}`,
+        organizationName: tenant.name,
+        role: role,
+        inviteToken: token,
+        subdomain: tenant.subdomain,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: invitation,
+        message: 'Invitation sent successfully via email',
+      });
+    } catch (emailError) {
+      // Delete invitation if email fails
+      await Invitation.findByIdAndDelete(invitation._id);
+      
+      throw new Error(`Failed to send email: ${emailError.message}`);
+    }
   } catch (error) {
-    console.error("Error in inviteUser:", error);
+    console.error('Error in inviteUser:', error);
     res.status(500).json({
       success: false,
-      message: "Error creating invitation",
+      message: 'Error creating invitation',
       error: error.message,
     });
   }
 };
-
 // @desc    Get invitation by token
 // @route   GET /api/users/invitation/:token
 // @access  Public
