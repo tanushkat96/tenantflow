@@ -50,7 +50,7 @@ function Sidebar({ isOpen, toggleSidebar, isCollapsed }) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:sticky left-0 top-0 h-screen z-20 bg-white border-r border-gray-200
+          fixed left-0 top-0 h-screen z-20 bg-white border-r border-gray-200
           transition-all duration-300 ease-in-out
           flex flex-col
           ${isCollapsed ? "w-20" : "w-64"}

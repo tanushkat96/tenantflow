@@ -21,16 +21,18 @@ function Layout({ children }) {
         sidebarCollapsed={sidebarCollapsed}
         toggleSidebar={toggleSidebar}
       />
-      <div className="flex flex-1 overflow-hidden pt-16">
-        <Sidebar
-          isOpen={sidebarOpen}
-          toggleSidebar={toggleSidebar}
-          isCollapsed={sidebarCollapsed}
-        />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6 lg:p-8">{children}</div>
-        </main>
-      </div>
+      <Sidebar
+        isOpen={sidebarOpen}
+        toggleSidebar={toggleSidebar}
+        isCollapsed={sidebarCollapsed}
+      />
+      <main
+        className={`flex-1 overflow-y-auto pt-16 transition-all duration-300 ${
+          sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
+        }`}
+      >
+        <div className="p-6 lg:p-8">{children}</div>
+      </main>
     </div>
   );
 }
