@@ -4,6 +4,7 @@ import { logout } from "../../redux/slices/authSlice";
 import { Menu, Search, Bell, User, LogOut, ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../services/api/axios";
 
 function Header({ toggleSidebar, toggleCollapse, sidebarCollapsed }) {
   const { user } = useSelector((state) => state.auth);
@@ -73,10 +74,19 @@ function Header({ toggleSidebar, toggleCollapse, sidebarCollapsed }) {
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100"
             >
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                {user?.firstName?.charAt(0)}
-                {user?.lastName?.charAt(0)}
-              </div>
+              {/* User avatar - use uploaded image if available */}
+              {user?.avatar ? (
+                <img
+                  src={`${API_BASE_URL}${user.avatar}`}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-secondary"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
+                  {user?.firstName?.charAt(0)}
+                  {user?.lastName?.charAt(0)}
+                </div>
+              )}
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-700">
                   {user?.firstName} {user?.lastName}

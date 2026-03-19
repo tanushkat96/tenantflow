@@ -15,6 +15,7 @@ import Tasks from "./pages/tasks/Tasks";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import Team from "./pages/team/Team";
 import AcceptInvite from "./pages/auth/AcceptInvitation";
+import Profile from "./pages/profile/Profile";
 
 function App() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -67,6 +68,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Team />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
