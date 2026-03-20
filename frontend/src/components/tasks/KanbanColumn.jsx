@@ -1,42 +1,45 @@
-import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import TaskCard from './TaskCard';
-import { Plus } from 'lucide-react';
+import { useDroppable } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import TaskCard from "./TaskCard";
+import { Plus } from "lucide-react";
 
-function KanbanColumn({ status, tasks, onEdit, onDelete, onAddTask }) {
-  const { setNodeRef } = useDroppable({ id: status.id });
+function KanbanColumn({ id, tasks, onEdit, onDelete, onAddTask }) {
+  const { setNodeRef } = useDroppable({ id });
 
   const statusConfig = {
     todo: {
-      title: 'To Do',
-      color: 'bg-gray-100',
-      textColor: 'text-gray-700',
+      title: "To Do",
+      color: "bg-gray-100",
+      textColor: "text-gray-700",
     },
     inprogress: {
-      title: 'In Progress',
-      color: 'bg-blue-100',
-      textColor: 'text-blue-700',
+      title: "In Progress",
+      color: "bg-blue-100",
+      textColor: "text-blue-700",
     },
     review: {
-      title: 'Review',
-      color: 'bg-purple-100',
-      textColor: 'text-purple-700',
+      title: "Review",
+      color: "bg-purple-100",
+      textColor: "text-purple-700",
     },
     done: {
-      title: 'Done',
-      color: 'bg-green-100',
-      textColor: 'text-green-700',
+      title: "Done",
+      color: "bg-green-100",
+      textColor: "text-green-700",
     },
   };
 
-  const config = statusConfig[status.id] || statusConfig.todo;
+  const config = statusConfig[id] || statusConfig.todo;
 
   return (
     <div className="flex-shrink-0 w-80">
       {/* Column Header */}
-      <div className={`${config.color} rounded-lg p-3 mb-3`}>
+      <div className={`${config.color} rounded-lg p-3  mb-3`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-5">
             <h3 className={`font-semibold ${config.textColor}`}>
               {config.title}
             </h3>
@@ -45,7 +48,7 @@ function KanbanColumn({ status, tasks, onEdit, onDelete, onAddTask }) {
             </span>
           </div>
           <button
-            onClick={() => onAddTask(status.id)}
+            onClick={() => onAddTask(id)}
             className={`p-1 rounded hover:bg-white/50 transition ${config.textColor}`}
           >
             <Plus className="w-4 h-4" />
@@ -59,7 +62,7 @@ function KanbanColumn({ status, tasks, onEdit, onDelete, onAddTask }) {
         className="space-y-3 min-h-[500px] bg-gray-50 rounded-lg p-3"
       >
         <SortableContext
-          items={tasks.map(t => t._id)}
+          items={tasks.map((t) => t._id)}
           strategy={verticalListSortingStrategy}
         >
           {tasks.map((task) => (

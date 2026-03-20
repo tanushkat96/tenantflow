@@ -25,11 +25,12 @@ import {
   setLoading,
 } from "../../redux/slices/taskSlice";
 import { setProjects } from "../../redux/slices/projectSlice";
-import { Filter, Plus } from "lucide-react";
+import { Filter, Plus, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 function Tasks() {
   const dispatch = useDispatch();
+  const { user: currentUser } = useSelector((state) => state.auth);
   const { tasks, loading } = useSelector((state) => state.tasks);
   const { projects } = useSelector((state) => state.projects);
 
@@ -38,6 +39,10 @@ function Tasks() {
   const [defaultStatus, setDefaultStatus] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [filterProject, setFilterProject] = useState("");
+
+  // ✅ Check permissions
+  const canAssignTasks =
+    currentUser?.role === "owner" || currentUser?.role === "admin";
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -53,7 +58,6 @@ function Tasks() {
     { id: "done", title: "Done" },
   ];
 
-  // Fetch projects on mount
   const fetchProjects = useCallback(async () => {
     try {
       const response = await projectService.getAllProjects();
@@ -63,7 +67,6 @@ function Tasks() {
     }
   }, [dispatch]);
 
-  // Fetch tasks on mount
   const fetchTasks = useCallback(async () => {
     try {
       dispatch(setLoading(true));
@@ -85,8 +88,14 @@ function Tasks() {
       const response = await taskService.createTask(taskData);
       dispatch(addTask(response.data));
       toast.success("Task created successfully!");
+      setShowModal(false);
+      setDefaultStatus(null);
+
+      // ✅ Refresh to update project progress
+      fetchTasks();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create task");
+      throw error;
     }
   };
 
@@ -95,8 +104,14 @@ function Tasks() {
       const response = await taskService.updateTask(selectedTask._id, taskData);
       dispatch(updateTaskAction(response.data));
       toast.success("Task updated successfully!");
+      setShowModal(false);
+      setSelectedTask(null);
+
+      // ✅ Refresh to update project progress
+      fetchTasks();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update task");
+      throw error;
     }
   };
 
@@ -106,121 +121,89 @@ function Tasks() {
         await taskService.deleteTask(task._id);
         dispatch(deleteTaskAction(task._id));
         toast.success("Task deleted successfully!");
+
+        // ✅ Refresh to update project progress
+        fetchTasks();
       } catch (error) {
         toast.error(error.response?.data?.message || "Failed to delete task");
       }
     }
   };
 
-  const handleEditClick = (task) => {
+  const handleEditTask = (task) => {
     setSelectedTask(task);
-    setDefaultStatus(null);
     setShowModal(true);
   };
 
-  const handleAddTask = (status) => {
-    setSelectedTask(null);
+  const handleCreateInColumn = (status) => {
     setDefaultStatus(status);
     setShowModal(true);
   };
 
-  const handleModalClose = () => {
-    setShowModal(false);
-    setSelectedTask(null);
-    setDefaultStatus(null);
-  };
-
-  const handleModalSubmit = (taskData) => {
-    if (selectedTask) {
-      handleUpdateTask(taskData);
-    } else {
-      handleCreateTask(taskData);
-    }
-  };
-
-  // Drag and Drop Handlers
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
-  };
-
-  const handleDragOver = (event) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeId = active.id;
-    const overId = over.id;
-
-    if (activeId === overId) return;
-
-    // Check if dragging over a column
-    const overColumn = columns.find((col) => col.id === overId);
-    if (overColumn) {
-      const task = tasks.find((t) => t._id === activeId);
-      if (task && task.status !== overColumn.id) {
-        // Update task status locally
-        dispatch(updateTaskStatus({ taskId: activeId, status: overColumn.id }));
-      }
-    }
   };
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
 
-    setActiveId(null);
-
-    if (!over) return;
-
-    const activeId = active.id;
-    const overId = over.id;
-
-    // Find the task
-    const task = tasks.find((t) => t._id === activeId);
-    if (!task) return;
-
-    // Determine the new status
-    let newStatus = task.status;
-
-    // Check if dropped on a column
-    const overColumn = columns.find((col) => col.id === overId);
-    if (overColumn) {
-      newStatus = overColumn.id;
-    } else {
-      // Dropped on another task - find that task's column
-      const overTask = tasks.find((t) => t._id === overId);
-      if (overTask) {
-        newStatus = overTask.status;
-      }
+    if (!over) {
+      setActiveId(null);
+      return;
     }
 
-    // Update on backend if status changed
-    if (task.status !== newStatus) {
+    const activeTask = tasks.find((t) => t._id === active.id);
+    const overColumn = over.id;
+
+    if (activeTask && activeTask.status !== overColumn) {
+      // ✅ Check if user can update this task
+      const userId = currentUser?._id;
+      const userRole = currentUser?.role;
+      const isAssigned = activeTask.assignedTo?.some((a) => a._id === userId);
+
+      if (userRole !== "owner" && userRole !== "admin" && !isAssigned) {
+        toast.error("You can only update tasks assigned to you");
+        setActiveId(null);
+        return;
+      }
+
       try {
-        await taskService.updateTaskStatus(activeId, newStatus);
-        toast.success("Task status updated!");
-      } catch {
-        // Revert on error
-        dispatch(updateTaskStatus({ taskId: activeId, status: task.status }));
-        toast.error("Failed to update task status");
+        await taskService.updateTaskStatus(activeTask._id, overColumn);
+        dispatch(
+          updateTaskStatus({
+            taskId: activeTask._id,
+            status: overColumn,
+          }),
+        );
+
+        // ✅ Refresh to update project progress
+        fetchTasks();
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message || "Failed to update task status",
+        );
       }
     }
+
+    setActiveId(null);
   };
 
-  // Filter tasks by project
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedTask(null);
+    setDefaultStatus(null);
+  };
+
+  // ✅ Filter tasks by project
   const filteredTasks = filterProject
-    ? tasks.filter((task) => {
-        const projectId = task.projectId?._id || task.projectId;
-        return projectId === filterProject;
-      })
+    ? tasks.filter((task) => task.projectId?._id === filterProject)
     : tasks;
 
-  // Group tasks by status
   const getTasksByStatus = (status) => {
     return filteredTasks.filter((task) => task.status === status);
   };
 
-  // Get active task for drag overlay
-  const activeTask = activeId ? tasks.find((t) => t._id === activeId) : null;
+  const activeTask = tasks.find((t) => t._id === activeId);
 
   return (
     <Layout>
@@ -230,11 +213,14 @@ function Tasks() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
             <p className="text-gray-600 mt-1">
-              Drag and drop tasks to update their status
+              {canAssignTasks
+                ? "Manage and assign tasks across your team"
+                : "Manage your assigned tasks"}
             </p>
           </div>
+
           <button
-            onClick={() => handleAddTask("todo")}
+            onClick={() => setShowModal(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent transition"
           >
             <Plus className="w-5 h-5" />
@@ -242,62 +228,74 @@ function Tasks() {
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <select
-              value={filterProject}
-              onChange={(e) => setFilterProject(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Projects</option>
-              {projects.map((project) => (
-                <option key={project._id} value={project._id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
+        {/* ✅ Info Banner for Members */}
+        {!canAssignTasks && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-yellow-900">
+                  Assignment Restriction
+                </p>
+                <p className="text-sm text-yellow-700 mt-1">
+                  As a {currentUser?.role}, you can create tasks but cannot
+                  assign them to team members. Only Owners and Admins can assign
+                  tasks.
+                </p>
+              </div>
+            </div>
           </div>
+        )}
 
-          <div className="text-sm text-gray-600">
-            Total: {filteredTasks.length} tasks
-          </div>
+        {/* Filter */}
+        <div className="flex items-center space-x-2">
+          <Filter className="w-5 h-5 text-gray-400" />
+          <select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="">All Projects</option>
+            {projects.map((project) => (
+              <option key={project._id} value={project._id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Kanban Board */}
         {loading ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex space-x-4 overflow-x-auto pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {columns.map((column) => (
                 <KanbanColumn
                   key={column.id}
-                  status={column}
+                  id={column.id}
+                  title={column.title}
                   tasks={getTasksByStatus(column.id)}
-                  onEdit={handleEditClick}
+                  onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
-                  onAddTask={handleAddTask}
+                  onAddTask={() => handleCreateInColumn(column.id)}
                 />
               ))}
             </div>
 
-            {/* Drag Overlay */}
             <DragOverlay>
               {activeTask ? (
                 <TaskCard
                   task={activeTask}
-                  onEdit={() => {}}
-                  onDelete={() => {}}
+                  onEdit={handleEditTask}
+                  onDelete={handleDeleteTask}
                 />
               ) : null}
             </DragOverlay>
@@ -308,8 +306,8 @@ function Tasks() {
       {/* Task Modal */}
       <TaskModal
         isOpen={showModal}
-        onClose={handleModalClose}
-        onSubmit={handleModalSubmit}
+        onClose={handleCloseModal}
+        onSubmit={selectedTask ? handleUpdateTask : handleCreateTask}
         task={selectedTask}
         defaultStatus={defaultStatus}
       />

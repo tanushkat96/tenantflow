@@ -5,11 +5,11 @@ const dotenv = require("dotenv");
 const authRoutes = require("./routes/authRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const taskRoutes = require("./routes/taskRoutes");
-const statsRoutes = require('./routes/statsRoutes');
-const userRoutes = require('./routes/userRoutes');
-const path = require('path');
-const settingsRoutes = require('./routes/settingsRoutes');
-
+const statsRoutes = require("./routes/statsRoutes");
+const userRoutes = require("./routes/userRoutes");
+const path = require("path");
+const settingsRoutes = require("./routes/settingsRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 // Load environment variables
 dotenv.config();
 
@@ -46,20 +46,21 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK',
-    timestamp: new Date().toISOString()
+app.get("/health", (req, res) => {
+  res.json({
+    status: "OK",
+    timestamp: new Date().toISOString(),
   });
 });
 
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/users', userRoutes);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/settings', settingsRoutes);
+app.use("/api/stats", statsRoutes);
+app.use("/api/users", userRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
