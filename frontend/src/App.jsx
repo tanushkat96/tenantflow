@@ -16,6 +16,7 @@ import ProtectedRoute from "./components/common/ProtectedRoute";
 import Team from "./pages/team/Team";
 import AcceptInvite from "./pages/auth/AcceptInvitation";
 import Profile from "./pages/profile/Profile";
+import Settings from './pages/settings/Settings';
 
 function App() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -83,7 +84,7 @@ function App() {
           path="/settings"
           element={
             <ProtectedRoute>
-              <div className="p-8">Settings page - Coming soon!</div>
+              <Settings/>
             </ProtectedRoute>
           }
         />

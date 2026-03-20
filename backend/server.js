@@ -8,6 +8,7 @@ const taskRoutes = require("./routes/taskRoutes");
 const statsRoutes = require('./routes/statsRoutes');
 const userRoutes = require('./routes/userRoutes');
 const path = require('path');
+const settingsRoutes = require('./routes/settingsRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -58,6 +59,7 @@ app.use("/api/tasks", taskRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/settings', settingsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

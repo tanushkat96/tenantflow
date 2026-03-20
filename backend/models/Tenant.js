@@ -13,6 +13,10 @@ const tenantSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
   },
+   description: {  // ← ADD THIS
+      type: String,
+      trim: true,
+    },
   plan: {
     type: String,
     enum: ['free', 'professional', 'enterprise'],

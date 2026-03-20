@@ -47,6 +47,14 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     lastLogin: Date,
+    notificationSettings: {
+      emailNotifications: { type: Boolean, default: true },
+      taskAssigned: { type: Boolean, default: true },
+      taskCompleted: { type: Boolean, default: true },
+      projectUpdates: { type: Boolean, default: true },
+      teamInvites: { type: Boolean, default: true },
+      weeklyDigest: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: true,
