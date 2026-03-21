@@ -1,122 +1,129 @@
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { logout } from "../../redux/slices/authSlice";
-import { Menu, Search, Bell, User, LogOut, ChevronLeft } from "lucide-react";
-import { useState } from "react";
-import toast from "react-hot-toast";
-import { API_BASE_URL } from "../../services/api/axios";
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate, Link } from 'react-router-dom';
+import { logout } from '../../redux/slices/authSlice';
+import { Menu, Bell, Search, LogOut, User, Settings as SettingsIcon, FolderKanban } from 'lucide-react';
+import { useState } from 'react';
 
-function Header({ toggleSidebar, toggleCollapse, sidebarCollapsed }) {
+function Header({ onMenuClick, sidebarOpen }) {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
-    toast.success("Logged out successfully");
-    navigate("/login");
+    navigate('/login');
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 fixed w-full top-0 z-30">
-      <div className="flex items-center justify-between h-16 px-4">
-        {/* Left side */}
+    <header className="glass border-b border-gray-200 sticky top-0 z-40">
+      <div className="flex items-center justify-between px-6 py-4">
+        {/* Left Section */}
         <div className="flex items-center space-x-4">
-          {/* Mobile menu button */}
+          {/* Mobile menu button OR desktop expand button when sidebar collapsed */}
           <button
-            onClick={toggleSidebar}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+            onClick={onMenuClick}
+            className="p-2 rounded-lg hover:bg-purple-50 transition-all transform hover:scale-110"
+            title={sidebarOpen ? 'Toggle menu' : 'Expand sidebar'}
           >
-            <Menu className="w-6 h-6 text-gray-600" />
+            <Menu className="w-6 h-6 text-gray-700" />
           </button>
 
-          {/* Desktop collapse button */}
-          <button
-            onClick={toggleCollapse}
-            className="hidden lg:flex p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            title="Toggle sidebar"
-          >
-            <ChevronLeft
-              className={`w-6 h-6 text-gray-600 transition-transform duration-300 ${sidebarCollapsed ? "rotate-180" : ""}`}
-            />
-          </button>
-
-          {/* Logo */}
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold text-primary">TenantFlow</h1>
-          </div>
-
-          {/* Search bar (Desktop) */}
-          <div className="hidden md:flex ali items-center pl-12">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-64"
-              />
+          {/* Logo - visible on mobile and tablet */}
+          <Link to="/dashboard" className="flex items-center gap-2 lg:hidden">
+            <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <FolderKanban className="w-5 h-5 text-white" />
             </div>
+            <span className="text-lg font-bold gradient-text">TenantFlow</span>
+          </Link>
+
+          {/* Search Bar */}
+          <div className="hidden md:flex items-center space-x-2 glass-light rounded-xl px-4 py-2.5 w-80 group focus-within:ring-2 focus-within:ring-purple-500 transition-all">
+            <Search className="w-5 h-5 text-gray-500 group-focus-within:text-purple-600 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search projects, tasks..."
+              className="flex-1 bg-transparent border-none outline-none text-gray-700 placeholder-gray-500 text-sm"
+            />
+            <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-xs font-mono text-gray-500 bg-white/70 rounded">
+              ⌘K
+            </kbd>
           </div>
         </div>
 
-        {/* Right side */}
+        {/* Right Section */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <button className="p-2 rounded-lg hover:bg-gray-100 relative">
-            <Bell className="w-6 h-6 text-gray-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          <button className="relative p-2.5 rounded-xl hover:bg-purple-50 transition-all transform hover:scale-110 group">
+            <Bell className="w-5 h-5 text-gray-700 group-hover:text-purple-600 transition-colors" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse ring-2 ring-white" />
           </button>
 
-          {/* User menu */}
+          {/* User Profile */}
           <div className="relative">
             <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100"
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-purple-50 transition-all transform hover:scale-105"
             >
-              {/* User avatar - use uploaded image if available */}
-              {user?.avatar ? (
-                <img
-                  src={`${API_BASE_URL}${user.avatar}`}
-                  alt="Profile"
-                  className="w-8 h-8 rounded-full object-cover border-2 border-secondary"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                  {user?.firstName?.charAt(0)}
-                  {user?.lastName?.charAt(0)}
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center text-white font-semibold shadow-lg">
+                  {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                 </div>
-              )}
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+              </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-gray-700">
+                <p className="text-sm font-semibold text-gray-900">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                <p className="text-xs text-gray-600 capitalize">{user?.role}</p>
               </div>
             </button>
 
-            {/* Dropdown */}
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
-                <button
-                  onClick={() => {
-                    setShowDropdown(false);
-                    navigate("/profile");
-                  }}
-                  className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <User className="w-4 h-4" />
-                  <span>Profile</span>
-                </button>
-                <hr className="my-1" />
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
-                </button>
-              </div>
+            {/* Profile Dropdown */}
+            {showProfileMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowProfileMenu(false)}
+                />
+                <div className="absolute right-0 mt-2 w-56 glass rounded-xl shadow-2xl py-2 z-20 animate-fadeIn border border-gray-200">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-xs text-gray-600">{user?.email}</p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      navigate('/profile');
+                    }}
+                    className="flex items-center space-x-3 w-full px-4 py-3 text-gray-700 hover:bg-purple-50 transition-all group"
+                  >
+                    <User className="w-5 h-5 group-hover:text-purple-600 transition-colors" />
+                    <span className="text-sm">Profile</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      navigate('/settings');
+                    }}
+                    className="flex items-center space-x-3 w-full px-4 py-3 text-gray-700 hover:bg-purple-50 transition-all group"
+                  >
+                    <SettingsIcon className="w-5 h-5 group-hover:text-purple-600 transition-colors" />
+                    <span className="text-sm">Settings</span>
+                  </button>
+                  <hr className="my-2 border-gray-200" />
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 transition-all group"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="text-sm font-medium">Logout</span>
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

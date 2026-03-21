@@ -7,8 +7,8 @@ import {
   Zap,
   Shield,
   ArrowRight,
+  CheckCircle,
 } from "lucide-react";
-import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import HeroImage from "../assets/Hero.svg";
 
@@ -51,76 +51,127 @@ function Landing() {
     },
   ];
 
+  const stats = [
+    { value: "10K+", label: "Active Users" },
+    { value: "50K+", label: "Projects Managed" },
+    { value: "99.9%", label: "Uptime" },
+    { value: "24/7", label: "Support" },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-light via-gray-100 to-accent">
       {/* Header - Minimal for Landing */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      <header className="glass sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
-          <div className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            TenantFlow
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <FolderKanban className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold gradient-text">
+              TenantFlow
+            </span>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <button
               onClick={() => navigate("/login")}
-              className="px-6 py-2 text-gray-700 hover:text-primary transition"
+              className="px-5 py-2.5 text-gray-700 hover:text-purple-600 transition font-medium"
             >
               Login
             </button>
             <button
               onClick={() => navigate("/register")}
-              className="px-6 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg transition transform hover:scale-105"
+              className="btn-primary px-5 py-2.5"
             >
-              Sign Up
+              Get Started
             </button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-6 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-primary rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-72 h-72 bg-secondary rounded-full blur-3xl"></div>
+      <section className="relative py-24 px-6 overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-20 left-20 w-96 h-96 bg-purple-400 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-400 rounded-full blur-3xl animate-pulse"></div>
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
-            <div className="space-y-6">
+            <div className="space-y-8 animate-fadeIn">
+              
+              
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
                 Transform Your Team's{" "}
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Workflow
-                </span>
+                <span className="gradient-text">Workflow</span>
               </h1>
-              <p className="text-lg text-gray-600">
+              <p className="text-xl text-gray-600 max-w-lg">
                 Streamline project management, empower your team, and deliver
                 results faster with TenantFlow. The all-in-one platform for
                 modern organizations.
               </p>
+              
+              {/* Trust indicators */}
+              <div className="flex flex-wrap gap-4 pt-2">
+                {["Free 14-day trial", "No credit card", "Cancel anytime"].map(
+                  (item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 text-sm text-gray-600"
+                    >
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      {item}
+                    </div>
+                  ),
+                )}
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   onClick={() => navigate("/register")}
-                  className="px-8 py-4 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg transition transform hover:scale-105 flex items-center justify-center gap-2 font-semibold"
+                  className="btn-primary px-8 py-4 text-lg flex items-center justify-center gap-2"
                 >
-                  Get Started <ArrowRight className="w-5 h-5" />
+                  Start Free Trial <ArrowRight className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => navigate("/login")}
-                  className="px-8 py-4 border-2 border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition font-semibold"
+                  className="px-8 py-4 text-lg border-2 border-purple-200 text-purple-700 rounded-xl hover:bg-purple-50 transition font-medium"
                 >
-                  Login
+                  View Demo
                 </button>
               </div>
             </div>
 
-            {/* Right - Hero Image */}
-            <div className="relative h-96 lg:h-full min-h-96 flex items-center justify-center">
-              <img
-                src={HeroImage}
-                alt="Organization workflow"
-                className="w-full h-full object-cover rounded-2xl"
-              />
+            {/* Right - Hero Image with Glass Frame */}
+            <div className="relative h-96 lg:h-full min-h-96 flex items-center justify-center animate-slideIn">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-3xl blur-2xl"></div>
+              <div className="relative glass rounded-2xl p-4 w-full h-full">
+                <img
+                  src={HeroImage}
+                  alt="Organization workflow"
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="glass rounded-2xl p-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {stats.map((stat, idx) => (
+                <div key={idx} className="text-center">
+                  <div className="text-4xl font-bold gradient-text mb-2">
+                    {stat.value}
+                  </div>
+                  <div className="text-gray-600 font-medium">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -132,7 +183,7 @@ function Landing() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
               Powerful Features for{" "}
-              <span className="text-primary">Modern Teams</span>
+              <span className="gradient-text">Modern Teams</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Everything you need to manage projects, tasks, and teams in one
@@ -140,14 +191,14 @@ function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="bg-white rounded-xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition hover:scale-105 hover:border-primary/30"
+                className="glass card-hover p-8 rounded-2xl"
               >
-                <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg flex items-center justify-center mb-6">
-                  <feature.icon className="w-7 h-7 text-primary" />
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center mb-6">
+                  <feature.icon className="w-7 h-7 text-purple-600" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">
                   {feature.title}
@@ -160,28 +211,33 @@ function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-primary to-secondary">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Ready to Transform Your Workflow?
-          </h2>
-          <p className="text-lg text-white/90 mb-8">
-            Join thousands of teams already using TenantFlow to streamline their
-            work
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => navigate("/register")}
-              className="px-8 py-4 bg-white text-primary rounded-lg hover:bg-gray-50 transition font-semibold transform hover:scale-105"
-            >
-              Start Free Trial
-            </button>
-            <button
-              onClick={() => navigate("/login")}
-              className="px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white/10 transition font-semibold"
-            >
-              Sign In
-            </button>
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="glass rounded-2xl p-12 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-blue-500/10"></div>
+            <div className="relative z-10">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Ready to Transform Your Workflow?
+              </h2>
+              <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
+                Join thousands of teams already using TenantFlow to streamline
+                their work
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => navigate("/register")}
+                  className="btn-primary px-8 py-4 text-lg"
+                >
+                  Start Free Trial
+                </button>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-8 py-4 text-lg border-2 border-purple-200 text-purple-700 rounded-xl hover:bg-purple-50 transition font-medium"
+                >
+                  Sign In
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

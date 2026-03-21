@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle } from "lucide-react";
 import {
   loginStart,
   loginSuccess,
@@ -71,6 +71,13 @@ function Register() {
     }
   };
 
+  const benefits = [
+    "14-day free trial",
+    "No credit card required",
+    "Unlimited projects",
+    "24/7 support",
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-light via-gray-100 to-accent">
       {/* Back Button */}
@@ -85,7 +92,7 @@ function Register() {
       <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
           {/* Left - Hero Image */}
-          <div className="hidden lg:block">
+          <div className="hidden lg:block animate-fadeIn">
             <img
               src={HeroImage}
               alt="Register illustration"
@@ -93,22 +100,29 @@ function Register() {
             />
           </div>
 
-          {/* Right - Form */}
-          <div className="w-full max-w-md mx-auto space-y-6 bg-white rounded-xl shadow-lg p-8 border border-gray-100 max-h-screen overflow-y-auto">
+          {/* Right - Form with Glass Effect */}
+          <div className="w-full max-w-md mx-auto space-y-6 glass p-8 rounded-2xl animate-slideIn max-h-[90vh] overflow-y-auto custom-scrollbar">
             {/* Header */}
-            <div>
-              <h2 className="text-3xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
-                Create your account
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold gradient-text mb-2">
+                Start Your Journey
               </h2>
               <p className="text-sm text-gray-600">
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="font-medium text-primary hover:text-secondary"
-                >
-                  Sign in
-                </Link>
+                Create your workspace and invite your team
               </p>
+            </div>
+
+            {/* Benefits */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {benefits.map((benefit, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1.5 text-xs text-gray-600 bg-purple-50 px-3 py-1.5 rounded-full"
+                >
+                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                  {benefit}
+                </div>
+              ))}
             </div>
 
             {/* Form */}
@@ -118,7 +132,7 @@ function Register() {
                 <div>
                   <label
                     htmlFor="organizationName"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
                     Organization Name
                   </label>
@@ -129,7 +143,7 @@ function Register() {
                     required
                     value={formData.organizationName}
                     onChange={handleChange}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="Acme Corporation"
                   />
                 </div>
@@ -138,33 +152,33 @@ function Register() {
                 <div>
                   <label
                     htmlFor="subdomain"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
                     Subdomain
                   </label>
-                  <input
-                    id="subdomain"
-                    name="subdomain"
-                    type="text"
-                    required
-                    value={formData.subdomain}
-                    onChange={handleChange}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                    placeholder="acme"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Your workspace URL will be:{" "}
-                    {formData.subdomain || "subdomain"}
-                    .tenantflow.com
-                  </p>
+                  <div className="relative">
+                    <input
+                      id="subdomain"
+                      name="subdomain"
+                      type="text"
+                      required
+                      value={formData.subdomain}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
+                      placeholder="acme"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                      .tenantflow.com
+                    </span>
+                  </div>
                 </div>
 
                 {/* First Name & Last Name */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label
                       htmlFor="firstName"
-                      className="block text-sm font-medium text-gray-700 mb-1"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
                     >
                       First Name
                     </label>
@@ -175,14 +189,14 @@ function Register() {
                       required
                       value={formData.firstName}
                       onChange={handleChange}
-                      className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                       placeholder="John"
                     />
                   </div>
                   <div>
                     <label
                       htmlFor="lastName"
-                      className="block text-sm font-medium text-gray-700 mb-1"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
                     >
                       Last Name
                     </label>
@@ -193,7 +207,7 @@ function Register() {
                       required
                       value={formData.lastName}
                       onChange={handleChange}
-                      className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                       placeholder="Doe"
                     />
                   </div>
@@ -203,7 +217,7 @@ function Register() {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
                     Email address
                   </label>
@@ -214,7 +228,7 @@ function Register() {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="john@acme.com"
                   />
                 </div>
@@ -223,7 +237,7 @@ function Register() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
                     Password
                   </label>
@@ -234,7 +248,7 @@ function Register() {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="••••••••"
                   />
                 </div>
@@ -243,7 +257,7 @@ function Register() {
                 <div>
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
                     Confirm Password
                   </label>
@@ -254,7 +268,7 @@ function Register() {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="••••••••"
                   />
                 </div>
@@ -262,8 +276,8 @@ function Register() {
 
               {/* Error Message */}
               {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <p className="text-sm text-red-800">{error}</p>
+                <div className="rounded-xl bg-red-50 p-4 border border-red-100">
+                  <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
 
@@ -272,37 +286,29 @@ function Register() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="btn-primary w-full flex justify-center items-center gap-2 py-3.5"
                 >
                   {loading ? (
-                    <span className="flex items-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                    <>
+                      <div className="spinner w-5 h-5" />
                       Creating account...
-                    </span>
+                    </>
                   ) : (
-                    "Create account"
+                    "Create Workspace"
                   )}
                 </button>
               </div>
+
+              {/* Login Link */}
+              <p className="text-center text-sm text-gray-600">
+                Already have an account?{" "}
+                <Link
+                  to="/login"
+                  className="font-semibold text-purple-600 hover:text-purple-700 transition"
+                >
+                  Sign in
+                </Link>
+              </p>
             </form>
           </div>
         </div>

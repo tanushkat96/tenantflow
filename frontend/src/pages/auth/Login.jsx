@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle } from "lucide-react";
 import {
   loginStart,
   loginSuccess,
@@ -58,7 +58,7 @@ function Login() {
       {/* Back Button */}
       <button
         onClick={() => navigate("/")}
-        className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-primary transition rounded-lg hover:bg-white/50"
+        className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-primary transition rounded-lg hover:bg-white/50 z-10"
       >
         <ArrowLeft className="w-5 h-5" />
         <span className="font-medium">Back</span>
@@ -67,7 +67,7 @@ function Login() {
       <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
           {/* Left - Hero Image */}
-          <div className="hidden lg:block">
+          <div className="hidden lg:block animate-fadeIn">
             <img
               src={HeroImage}
               alt="Login illustration"
@@ -75,32 +75,44 @@ function Login() {
             />
           </div>
 
-          {/* Right - Form */}
-          <div className="w-full max-w-md mx-auto space-y-8 bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          {/* Right - Form with Glass Effect */}
+          <div className="w-full max-w-md mx-auto space-y-8 glass p-8 rounded-2xl animate-slideIn">
             {/* Header */}
-            <div>
-              <h2 className="text-3xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
-                Sign in to TenantFlow
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold gradient-text mb-2">
+                Welcome Back
               </h2>
               <p className="text-sm text-gray-600">
-                Or{" "}
-                <Link
-                  to="/register"
-                  className="font-medium text-primary hover:text-secondary"
-                >
-                  create a new account
-                </Link>
+                Sign in to continue to{" "}
+                <span className="font-semibold text-purple-600">TenantFlow</span>
               </p>
             </div>
 
+            {/* Benefits */}
+            <div className="flex flex-wrap gap-3 justify-center">
+              {[
+                "Multi-tenant Support",
+                "Real-time Collaboration",
+                "Advanced Analytics",
+              ].map((benefit, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1.5 text-xs text-gray-600 bg-purple-50 px-3 py-1.5 rounded-full"
+                >
+                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                  {benefit}
+                </div>
+              ))}
+            </div>
+
             {/* Form */}
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-4">
                 {/* Subdomain */}
                 <div>
                   <label
                     htmlFor="subdomain"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
                     Organization Subdomain
                   </label>
@@ -111,7 +123,7 @@ function Login() {
                     required
                     value={formData.subdomain}
                     onChange={handleChange}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="acme"
                   />
                 </div>
@@ -120,7 +132,7 @@ function Login() {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
                     Email address
                   </label>
@@ -131,7 +143,7 @@ function Login() {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="john@acme.com"
                   />
                 </div>
@@ -140,7 +152,7 @@ function Login() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                   >
                     Password
                   </label>
@@ -151,7 +163,7 @@ function Login() {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="••••••••"
                   />
                 </div>
@@ -159,8 +171,8 @@ function Login() {
 
               {/* Error Message */}
               {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <p className="text-sm text-red-800">{error}</p>
+                <div className="rounded-xl bg-red-50 p-4 border border-red-100">
+                  <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
 
@@ -169,37 +181,29 @@ function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="btn-primary w-full flex justify-center items-center gap-2 py-3.5"
                 >
                   {loading ? (
-                    <span className="flex items-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                    <>
+                      <div className="spinner w-5 h-5" />
                       Signing in...
-                    </span>
+                    </>
                   ) : (
-                    "Sign in"
+                    "Sign in to Dashboard"
                   )}
                 </button>
               </div>
+
+              {/* Register Link */}
+              <p className="text-center text-sm text-gray-600">
+                Don't have an account?{" "}
+                <Link
+                  to="/register"
+                  className="font-semibold text-purple-600 hover:text-purple-700 transition"
+                >
+                  Create one now
+                </Link>
+              </p>
             </form>
           </div>
         </div>
