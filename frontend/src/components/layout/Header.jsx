@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../redux/slices/authSlice";
-import { Bell, Search, LogOut } from "lucide-react";
+import { Bell, Search, LogOut, ArrowRight} from "lucide-react";
 
 function Header() {
   const { user } = useSelector((state) => state.auth);
@@ -29,8 +29,8 @@ function Header() {
               placeholder="Search projects, tasks..."
               className="flex-1 bg-transparent border-none outline-none text-gray-700 placeholder-gray-500 text-sm"
             />
-            <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-xs font-mono text-gray-500 bg-white/70 rounded flex-shrink-0">
-              ⌘K
+            <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-xs font-mono text-primary bg-white/70 rounded flex-shrink-0">
+              <ArrowRight />
             </kbd>
           </div>
         </div>

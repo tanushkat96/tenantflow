@@ -55,6 +55,7 @@ function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-light via-gray-100 to-accent">
+      
       {/* Back Button */}
       <button
         onClick={() => navigate("/")}
@@ -65,6 +66,11 @@ function Login() {
       </button>
 
       <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className=" inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[400px] bg-primary/15 blur-[120px] rounded-full animate-float" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-secondary/15 blur-[100px] rounded-full animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-primary-container/15 blur-[150px] rounded-full animate-float" style={{ animationDelay: '4s' }} />
+      </div>
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
           {/* Left - Hero Image */}
           <div className="hidden lg:block animate-fadeIn">
@@ -181,7 +187,7 @@ function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn-primary w-full flex justify-center items-center gap-2 py-3.5"
+                  className="px-8 py-4 rounded-full bg-gradient-to-br from-primary to-primary-dim text-white font-bold text-sm tracking-widest uppercase shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95 text-center w-full"
                 >
                   {loading ? (
                     <>

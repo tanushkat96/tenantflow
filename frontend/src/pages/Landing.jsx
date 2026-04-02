@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, TrendingUp, Shield, Zap, Users, Globe, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import HeroImage from "../assets/Hero.svg";
 
 function Landing() {
   const [scrolled, setScrolled] = useState(false);
@@ -93,7 +94,7 @@ function Landing() {
           </Link>
           <Link
             to="/login"
-            className="px-8 py-4 rounded-full border border-outline-variant/30 text-primary font-bold text-sm tracking-widest uppercase hover:bg-surface-container-low transition-all"
+            className="px-8 py-4 rounded-full border border-outline-variant/90 text-primary font-bold text-sm tracking-widest uppercase shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95"
             style={{ fontFamily: 'Manrope' }}
           >
             Sign In
@@ -104,9 +105,12 @@ function Landing() {
         <div className="mt-20 relative w-full max-w-5xl aspect-video rounded-3xl overflow-hidden shadow-atmospheric-lg group animate-scaleIn" style={{ animationDelay: '0.3s' }}>
           <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent z-10" />
           <div className="w-full h-full bg-gradient-to-br from-primary/10 via-secondary/10 to-primary-container/10 flex items-center justify-center">
-            <div className="text-center">
-              <TrendingUp className="w-32 h-32 text-primary/30 mx-auto mb-4" />
-              <p className="text-on-surface-variant font-semibold">Dashboard Preview</p>
+            <div className="w-full h-full rounded-2xl overflow-hidden border border-surface-container bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
+              <img
+                   src={HeroImage}
+                  alt="Login illustration"
+                            className="w-full h-auto rounded-2xl shadow-lg"
+                          />
             </div>
           </div>
 
