@@ -91,11 +91,13 @@ function Tasks() {
       const response = await taskService.createTask(taskData);
       dispatch(addTask(response.data));
       toast.success("Task created successfully!");
-      setShowModal(false);
       setDefaultStatus(null);
 
       // ✅ Refresh to update project progress
       fetchTasks();
+
+      // Return the created task so the modal can upload queued attachments
+      return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create task");
       throw error;

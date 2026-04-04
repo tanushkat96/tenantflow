@@ -2,26 +2,22 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const uploadsDir = 'uploads/avatars/';
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('📁 Created uploads directory:', uploadsDir);
+// ── Avatar uploads ────────────────────────────────────────────
+const avatarsDir = 'uploads/avatars/';
+if (!fs.existsSync(avatarsDir)) {
+  fs.mkdirSync(avatarsDir, { recursive: true });
+  console.log('📁 Created uploads directory:', avatarsDir);
 }
-// Configure storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/avatars/');
-  },
-  filename: function (req, file, cb) {
-    // Create unique filename: userId-timestamp.ext
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/avatars/'),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, req.user._id + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
-// File filter
-const fileFilter = (req, file, cb) => {
-  // Accept images only
+const imageFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
@@ -30,11 +26,33 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+  storage: avatarStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
+
+// ── Task-asset uploads ────────────────────────────────────────
+const tasksDir = 'uploads/tasks/';
+if (!fs.existsSync(tasksDir)) {
+  fs.mkdirSync(tasksDir, { recursive: true });
+  console.log('📁 Created uploads directory:', tasksDir);
+}
+
+const taskStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/tasks/'),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'task-' + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const taskUpload = multer({
+  storage: taskStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB per file
+});
+
+// ── Exports ───────────────────────────────────────────────────
+upload.taskUpload = taskUpload;
 
 module.exports = upload;

@@ -423,3 +423,145 @@ if (
     });
   }
 };
+
+// ── Upload Task Attachments ───────────────────────────────────────────────────
+const fs = require("fs");
+const path = require("path");
+
+exports.uploadTaskAttachments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const userRole = req.user.role;
+
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // Permission: creator, assigned, owner, admin
+    const isCreator = task.createdBy.toString() === userId.toString();
+    const isAssigned = task.assignedTo.some(
+      (a) => a.toString() === userId.toString()
+    );
+    if (
+      userRole !== "owner" &&
+      userRole !== "admin" &&
+      !isCreator &&
+      !isAssigned
+    ) {
+      return res
+        .status(403)
+        .json({ message: "You do not have permission to upload attachments" });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    const newAttachments = req.files.map((file) => ({
+      url: `${baseUrl}/uploads/tasks/${file.filename}`,
+      filename: file.filename,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      uploadedBy: userId,
+      uploadedAt: new Date(),
+    }));
+
+    task.attachments.push(...newAttachments);
+    await task.save();
+
+    const populatedTask = await Task.findById(id)
+      .populate("assignedTo", "firstName lastName email avatar")
+      .populate("createdBy", "firstName lastName email avatar")
+      .populate("updatedBy", "firstName lastName email avatar")
+      .populate("projectId", "name key");
+
+    // 📡 Emit real-time update
+    if (task.projectId) {
+      emitToProject(task.projectId, "task-updated", populatedTask);
+    }
+    emitToTenant(task.tenantId, "task-updated", populatedTask);
+
+    res.json({ success: true, data: populatedTask });
+  } catch (error) {
+    console.error("Upload task attachments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to upload attachments",
+      error: error.message,
+    });
+  }
+};
+
+// ── Delete Task Attachment ────────────────────────────────────────────────────
+exports.deleteTaskAttachment = async (req, res) => {
+  try {
+    const { id, filename } = req.params;
+    const userId = req.user._id;
+    const userRole = req.user.role;
+
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // Permission: creator, assigned, owner, admin
+    const isCreator = task.createdBy.toString() === userId.toString();
+    const isAssigned = task.assignedTo.some(
+      (a) => a.toString() === userId.toString()
+    );
+    if (
+      userRole !== "owner" &&
+      userRole !== "admin" &&
+      !isCreator &&
+      !isAssigned
+    ) {
+      return res
+        .status(403)
+        .json({ message: "You do not have permission to delete attachments" });
+    }
+
+    const attachmentIndex = task.attachments.findIndex(
+      (a) => a.filename === filename
+    );
+    if (attachmentIndex === -1) {
+      return res.status(404).json({ message: "Attachment not found" });
+    }
+
+    // Delete file from disk
+    const filePath = path.join(__dirname, "..", "uploads", "tasks", filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // Remove from DB
+    task.attachments.splice(attachmentIndex, 1);
+    await task.save();
+
+    const populatedTask = await Task.findById(id)
+      .populate("assignedTo", "firstName lastName email avatar")
+      .populate("createdBy", "firstName lastName email avatar")
+      .populate("updatedBy", "firstName lastName email avatar")
+      .populate("projectId", "name key");
+
+    // 📡 Emit real-time update
+    if (task.projectId) {
+      emitToProject(task.projectId, "task-updated", populatedTask);
+    }
+    emitToTenant(task.tenantId, "task-updated", populatedTask);
+
+    res.json({ success: true, data: populatedTask });
+  } catch (error) {
+    console.error("Delete task attachment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete attachment",
+      error: error.message,
+    });
+  }
+};
+

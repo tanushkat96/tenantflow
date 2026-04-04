@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSelector } from "react-redux";
-import { X, Calendar, Tag, AlertCircle, Users } from "lucide-react";
+import { X, Calendar, Tag, AlertCircle, Users, Paperclip, Upload, Trash2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import taskService from "../../services/api/taskService";
 
 function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
   const { user: currentUser } = useSelector((state) => state.auth);
@@ -16,14 +17,20 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
     priority: "medium",
     dueDate: "",
     projectId: "",
-    assignedTo: [], // ✅ Array for multiple assignees
+    assignedTo: [],
     labels: [],
   });
 
   const [errors, setErrors] = useState({});
   const [labelInput, setLabelInput] = useState("");
 
-  // ✅ Check if current user can assign tasks
+  // ── Attachment state ──────────────────────────────────────────────────────
+  const [attachments, setAttachments] = useState([]);
+  const [queuedFiles, setQueuedFiles] = useState([]); // files staged for upload on create
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
   const canAssign =
     currentUser?.role === "owner" || currentUser?.role === "admin";
 
@@ -39,6 +46,8 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
         assignedTo: task.assignedTo?.map((a) => a._id) || [],
         labels: task.labels || [],
       });
+      setAttachments(task.attachments || []);
+      setQueuedFiles([]);       // clear any queued files when switching tasks
     } else if (isOpen) {
       setFormData({
         title: "",
@@ -50,10 +59,11 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
         assignedTo: [],
         labels: [],
       });
+      setAttachments([]);
+      setQueuedFiles([]);
     }
   }, [isOpen, task, defaultStatus]);
 
-  // ✅ Fetch team members when modal opens
   const fetchTeamMembers = useCallback(async () => {
     try {
       const response = await fetch("http://localhost:5000/api/users", {
@@ -63,14 +73,10 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
       });
       const data = await response.json();
       if (data.success) {
-        // ✅ Include all members except owner role (but allow admins/members to assign themselves)
         let members = data.data.filter((u) => u.role !== "owner");
-
-        // ✅ Ensure current user is in the list if they can assign
         if (canAssign && !members.some((m) => m._id === currentUser?._id)) {
           members = [currentUser, ...members];
         }
-
         setTeamMembers(members);
       }
     } catch (error) {
@@ -92,7 +98,6 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
     }
   };
 
-  // ✅ Handle multi-select for assignees
   const handleAssigneeChange = (userId) => {
     setFormData((prev) => {
       const newAssignedTo = prev.assignedTo.includes(userId)
@@ -120,35 +125,110 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
     }));
   };
 
+  // ── Attachment handlers ───────────────────────────────────────────────────
+  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+
+  const validateFiles = (files) => {
+    const valid = [];
+    for (const file of files) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error(`${file.name}: only images (jpg, png, gif, webp) allowed`);
+        continue;
+      }
+      if (file.size > MAX_SIZE) {
+        toast.error(`${file.name}: exceeds 5 MB limit`);
+        continue;
+      }
+      valid.push(file);
+    }
+    return valid;
+  };
+
+  const handleFilesSelected = async (rawFiles) => {
+    const files = validateFiles(Array.from(rawFiles));
+    if (files.length === 0) return;
+
+    if (task) {
+      // Edit mode — upload immediately
+      setUploadingFiles(true);
+      try {
+        const result = await taskService.uploadAttachments(task._id, files);
+        setAttachments(result.data.attachments || []);
+        toast.success(`${files.length} image${files.length > 1 ? "s" : ""} uploaded`);
+      } catch (err) {
+        toast.error("Upload failed. Please try again.");
+        console.error(err);
+      } finally {
+        setUploadingFiles(false);
+      }
+    } else {
+      // Create mode — queue files; they'll be uploaded after task is created
+      setQueuedFiles((prev) => [...prev, ...files]);
+    }
+  };
+
+  const handleDeleteAttachment = async (filename) => {
+    try {
+      const result = await taskService.deleteAttachment(task._id, filename);
+      setAttachments(result.data.attachments || []);
+      toast.success("Attachment removed");
+    } catch (err) {
+      toast.error("Failed to remove attachment");
+      console.error(err);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFilesSelected(e.dataTransfer.files);
+  };
+
+  // ── Validation & submit ───────────────────────────────────────────────────
   const validate = () => {
     const newErrors = {};
-
     if (!formData.title.trim()) {
       newErrors.title = "Title is required";
     }
-
-    // ✅ Only block assignment for non-admins creating a NEW task
     if (!task && formData.assignedTo.length > 0 && !canAssign) {
       newErrors.assignedTo = "Only Owners and Admins can assign tasks";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (validate()) {
       setLoading(true);
       try {
-        // ✅ Non-admins editing a task should NOT send assignedTo
-        // (they can't change it, and sending it may trigger backend reassign check)
         let submitData = { ...formData };
         if (task && !canAssign) {
           delete submitData.assignedTo;
         }
-        await onSubmit(submitData);
+        const result = await onSubmit(submitData);
+
+        // If creating a new task and there are queued files, upload them now
+        if (!task && queuedFiles.length > 0 && result?._id) {
+          setUploadingFiles(true);
+          try {
+            await taskService.uploadAttachments(result._id, queuedFiles);
+          } catch (uploadErr) {
+            toast.error("Task created but attachments failed to upload.");
+            console.error(uploadErr);
+          } finally {
+            setUploadingFiles(false);
+          }
+        }
+
         onClose();
       } catch (error) {
         if (error.response?.data?.message) {
@@ -185,7 +265,7 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
           </button>
         </div>
 
-        {/* ✅ Permission Warning */}
+        {/* Permission Warning */}
         {!canAssign && !task && (
           <div className="mx-6 mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
@@ -317,7 +397,7 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
             />
           </div>
 
-          {/* ✅ Assignees (Multi-Select for admins, Read-only display for members) */}
+          {/* Assignees */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <Users className="w-4 h-4 inline mr-1" />
@@ -363,12 +443,12 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
                 )}
               </div>
             ) : task && formData.assignedTo.length > 0 ? (
-              // ✅ Non-admin editing: show read-only list of current assignees
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                 <div className="flex flex-wrap gap-2">
                   {formData.assignedTo.map((uid) => {
-                    const member = teamMembers.find((m) => m._id === uid)
-                      || task.assignedTo?.find((a) => (a._id || a) === uid);
+                    const member =
+                      teamMembers.find((m) => m._id === uid) ||
+                      task.assignedTo?.find((a) => (a._id || a) === uid);
                     if (!member) return null;
                     return (
                       <div
@@ -389,12 +469,14 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
             ) : (
               <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-center">
                 <p className="text-sm text-gray-600">
-                  {task ? "No assignees" : "Only Owners and Admins can assign tasks"}
+                  {task
+                    ? "No assignees"
+                    : "Only Owners and Admins can assign tasks"}
                 </p>
               </div>
             )}
 
-            {/* ✅ Selected Assignees Display (admin only, shown below checklist) */}
+            {/* Selected Assignees Display (admin only) */}
             {canAssign && formData.assignedTo.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {formData.assignedTo.map((userId) => {
@@ -469,6 +551,136 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
               </div>
             )}
           </div>
+
+          {/* ── Attachments ─────────────────────────────────────────────── */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Paperclip className="w-4 h-4 inline mr-1" />
+              Attachments
+              {(attachments.length > 0 || queuedFiles.length > 0) && (
+                <span className="ml-2 text-xs text-gray-400">
+                  {task
+                    ? `(${attachments.length}/10)`
+                    : queuedFiles.length > 0
+                    ? `(${queuedFiles.length} queued — uploaded after save)`
+                    : ""}
+                </span>
+              )}
+            </label>
+
+              {/* Queued files preview (create mode) */}
+              {!task && queuedFiles.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {queuedFiles.map((file, idx) => (
+                      <div
+                        key={idx}
+                        className="relative group flex items-center space-x-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs px-2 py-1.5 rounded-lg"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="max-w-[100px] truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setQueuedFiles((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                          className="ml-1 hover:text-red-500 transition"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Existing thumbnails (edit mode) */}
+              {task && attachments.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  {attachments.map((att) => (
+                    <div
+                      key={att.filename}
+                      className="relative group rounded-lg overflow-hidden border border-gray-200 bg-gray-50 aspect-square"
+                    >
+                      <img
+                        src={att.url}
+                        alt={att.originalName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                      {/* Fallback icon */}
+                      <div
+                        className="hidden w-full h-full items-center justify-center"
+                        style={{ display: "none" }}
+                      >
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                      </div>
+
+                      {/* Overlay on hover */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-start justify-end p-1.5 opacity-0 group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAttachment(att.filename)}
+                          className="p-1 bg-red-500 hover:bg-red-600 rounded-full text-white transition"
+                          title="Remove attachment"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Filename tooltip */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-1.5 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-all">
+                        {att.originalName}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Dropzone — show in both create and edit modes */}
+              {(task ? attachments.length < 10 : true) && (
+                <div
+                  className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors ${
+                    isDragging
+                      ? "border-blue-400 bg-blue-50"
+                      : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={(e) => handleFilesSelected(e.target.files)}
+                  />
+                  {uploadingFiles ? (
+                    <div className="flex flex-col items-center gap-2 text-blue-600">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                      <span className="text-sm font-medium">Uploading…</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1.5 text-gray-500">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <p className="text-sm font-medium text-gray-700">
+                        Drop images here or{" "}
+                        <span className="text-blue-600 underline">browse</span>
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        JPG, PNG, GIF, WEBP · Max 5 MB each · Up to 5 at a time
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
           {/* Buttons */}
           <div className="flex items-center justify-end space-x-3 pt-4">

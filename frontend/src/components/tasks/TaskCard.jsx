@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Calendar, MoreVertical, Tag, Users } from "lucide-react";
+import { Calendar, MoreVertical, Tag, Users, Paperclip } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 
@@ -216,6 +216,16 @@ function TaskCard({ task, onEdit, onDelete }) {
           </div>
         )}
       </div>
+
+      {/* Attachments badge */}
+      {task.attachments && task.attachments.length > 0 && (
+        <div className="flex items-center space-x-1 mt-2 pt-2 border-t border-gray-100">
+          <Paperclip className="w-3 h-3 text-gray-400" />
+          <span className="text-xs text-gray-500">
+            {task.attachments.length} attachment{task.attachments.length > 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
 
       {/* Read-only indicator */}
       {!canEdit && (
