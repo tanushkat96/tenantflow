@@ -17,8 +17,9 @@ const { protect } = require("../middleware/auth");
 
 // All routes are protected
 router.get("/", protect, getAllTasks);
+router.get("/:id", protect, getTask);
 router.post("/", protect, validateAssignees, createTask);
-// router.put("/:id", protect, updateTask);
+router.put("/:id", protect, updateTask);
 router.delete("/:id", protect, deleteTask);
 router.patch("/:id/status", protect, updateTaskStatus);
 

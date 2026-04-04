@@ -111,7 +111,7 @@ function Team() {
     currentUser?.role === "owner" || currentUser?.role === "admin";
 
   return (
-    <Layout>
+    <div className="space-y-6">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -232,7 +232,7 @@ function Team() {
         onInvite={handleInvite}
         inviteLink={inviteLink}
       />
-    </Layout>
+    </div>
   );
 }
 

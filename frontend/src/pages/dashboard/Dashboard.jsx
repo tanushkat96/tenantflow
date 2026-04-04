@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Layout from "../../components/layout/Layout";
 import StatsCard from "../../components/dashboard/StatsCard";
 import RecentActivity from "../../components/dashboard/RecentActivity";
 import statsService from "../../services/api/statsService";
@@ -31,16 +30,14 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <div className="space-y-6">
       <div className="space-y-6">
         {/* Page Header */}
         <div>
@@ -163,7 +160,7 @@ function Dashboard() {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }
 

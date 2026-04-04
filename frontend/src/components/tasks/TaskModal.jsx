@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { X, Calendar, Tag, AlertCircle, Users } from "lucide-react";
 import toast from "react-hot-toast";
@@ -54,13 +54,7 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
   }, [isOpen, task, defaultStatus]);
 
   // ✅ Fetch team members when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      fetchTeamMembers();
-    }
-  }, [isOpen]);
-
-  const fetchTeamMembers = async () => {
+  const fetchTeamMembers = useCallback(async () => {
     try {
       const response = await fetch("http://localhost:5000/api/users", {
         headers: {
@@ -69,14 +63,26 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
       });
       const data = await response.json();
       if (data.success) {
-        // ✅ Filter out owner (cannot assign to owner)
-        const members = data.data.filter((u) => u.role !== "owner");
+        // ✅ Include all members except owner role (but allow admins/members to assign themselves)
+        let members = data.data.filter((u) => u.role !== "owner");
+
+        // ✅ Ensure current user is in the list if they can assign
+        if (canAssign && !members.some((m) => m._id === currentUser?._id)) {
+          members = [currentUser, ...members];
+        }
+
         setTeamMembers(members);
       }
     } catch (error) {
       console.error("Error fetching team members:", error);
     }
-  };
+  }, [canAssign, currentUser]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchTeamMembers();
+    }
+  }, [isOpen, fetchTeamMembers]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -121,8 +127,8 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
       newErrors.title = "Title is required";
     }
 
-    // ✅ Validate assignment permissions
-    if (formData.assignedTo.length > 0 && !canAssign && !task) {
+    // ✅ Only block assignment for non-admins creating a NEW task
+    if (!task && formData.assignedTo.length > 0 && !canAssign) {
       newErrors.assignedTo = "Only Owners and Admins can assign tasks";
     }
 
@@ -136,7 +142,13 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
     if (validate()) {
       setLoading(true);
       try {
-        await onSubmit(formData);
+        // ✅ Non-admins editing a task should NOT send assignedTo
+        // (they can't change it, and sending it may trigger backend reassign check)
+        let submitData = { ...formData };
+        if (task && !canAssign) {
+          delete submitData.assignedTo;
+        }
+        await onSubmit(submitData);
         onClose();
       } catch (error) {
         if (error.response?.data?.message) {
@@ -305,11 +317,11 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
             />
           </div>
 
-          {/* ✅ Assignees (Multi-Select) */}
+          {/* ✅ Assignees (Multi-Select for admins, Read-only display for members) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <Users className="w-4 h-4 inline mr-1" />
-              Assign To {!canAssign && "(Admin/Owner Only)"}
+              Assign To {!canAssign && "(View Only)"}
             </label>
 
             {canAssign ? (
@@ -350,16 +362,40 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
                   </div>
                 )}
               </div>
+            ) : task && formData.assignedTo.length > 0 ? (
+              // ✅ Non-admin editing: show read-only list of current assignees
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="flex flex-wrap gap-2">
+                  {formData.assignedTo.map((uid) => {
+                    const member = teamMembers.find((m) => m._id === uid)
+                      || task.assignedTo?.find((a) => (a._id || a) === uid);
+                    if (!member) return null;
+                    return (
+                      <div
+                        key={uid}
+                        className="inline-flex items-center space-x-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                      >
+                        <span>
+                          {member.firstName} {member.lastName}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Only Owners and Admins can change assignees.
+                </p>
+              </div>
             ) : (
               <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-center">
                 <p className="text-sm text-gray-600">
-                  You don't have permission to assign tasks
+                  {task ? "No assignees" : "Only Owners and Admins can assign tasks"}
                 </p>
               </div>
             )}
 
-            {/* ✅ Selected Assignees Display */}
-            {formData.assignedTo.length > 0 && (
+            {/* ✅ Selected Assignees Display (admin only, shown below checklist) */}
+            {canAssign && formData.assignedTo.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {formData.assignedTo.map((userId) => {
                   const member = teamMembers.find((m) => m._id === userId);
@@ -372,15 +408,13 @@ function TaskModal({ isOpen, onClose, onSubmit, task, defaultStatus }) {
                       <span>
                         {member.firstName} {member.lastName}
                       </span>
-                      {canAssign && (
-                        <button
-                          type="button"
-                          onClick={() => handleAssigneeChange(userId)}
-                          className="hover:bg-blue-200 rounded-full p-0.5"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleAssigneeChange(userId)}
+                        className="hover:bg-blue-200 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
                   );
                 })}

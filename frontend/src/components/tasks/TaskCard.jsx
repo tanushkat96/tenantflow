@@ -1,12 +1,44 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Calendar, MoreVertical, Tag, Users } from 'lucide-react';
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Calendar, MoreVertical, Tag, Users } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
 
 function TaskCard({ task, onEdit, onDelete }) {
   const { user: currentUser } = useSelector((state) => state.auth);
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMenu]);
+
+  // Check permissions
+  const userRole = currentUser?.role;
+  const userId = currentUser?._id || currentUser?.id; // handle both _id and id formats
+
+  // Handle both populated objects and plain ObjectId strings
+  const isAssigned =
+    userId && task.assignedTo?.some((a) => {
+      const assigneeId = typeof a === "string" ? a : a._id;
+      return String(assigneeId) === String(userId);
+    }) || false;
+
+  const createdById =
+    typeof task.createdBy === "string" ? task.createdBy : task.createdBy?._id;
+  const isCreator = userId ? String(createdById) === String(userId) : false;
+
+  const canEdit =
+    userRole === "owner" || userRole === "admin" || isAssigned || isCreator;
+  const canDelete =
+    userRole === "owner" || userRole === "admin" || isCreator;
 
   const {
     attributes,
@@ -15,7 +47,10 @@ function TaskCard({ task, onEdit, onDelete }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task._id });
+  } = useSortable({
+    id: task._id,
+    disabled: !canEdit, // Only allow drag if user can edit this task
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -23,30 +58,22 @@ function TaskCard({ task, onEdit, onDelete }) {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // ✅ Check if user can edit/delete this task
-  const userRole = currentUser?.role;
-  const userId = currentUser?._id;
-  const isAssigned = task.assignedTo?.some((a) => a._id === userId);
-
-  const canEdit = userRole === 'owner' || userRole === 'admin' || isAssigned;
-  const canDelete = userRole === 'owner' || userRole === 'admin';
-
   const priorityColors = {
-    low: 'bg-green-100 text-green-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-orange-100 text-orange-800',
-    urgent: 'bg-red-100 text-red-800',
+    low: "bg-green-100 text-green-800",
+    medium: "bg-yellow-100 text-yellow-800",
+    high: "bg-orange-100 text-orange-800",
+    urgent: "bg-red-100 text-red-800",
   };
 
   const formatDate = (date) => {
-    if (!date) return '';
+    if (!date) return "";
     const d = new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   const isOverdue = (date) => {
     if (!date) return false;
-    return new Date(date) < new Date() && task.status !== 'done';
+    return new Date(date) < new Date() && task.status !== "done";
   };
 
   return (
@@ -62,59 +89,48 @@ function TaskCard({ task, onEdit, onDelete }) {
           {task.title}
         </h3>
 
-        {/* ✅ Three Dots Menu - FIXED */}
+        {/* Three Dots Menu */}
         {(canEdit || canDelete) && (
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
+          <div className="relative" ref={menuRef} onClick={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
-              className="p-1 rounded hover:bg-gray-100 transition opacity-0 group-hover:opacity-100"
-              {...{}} // ✅ Remove drag listeners from button
+              className={`p-1 rounded hover:bg-gray-100 transition ${
+                showMenu ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              }`}
             >
               <MoreVertical className="w-4 h-4 text-gray-400" />
             </button>
 
             {showMenu && (
-              <>
-                {/* ✅ Backdrop to close menu */}
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(false);
-                  }}
-                />
-
-                {/* ✅ Menu */}
-                <div className="absolute right-0 top-6 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                  {canEdit && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                        onEdit(task);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Edit
-                    </button>
-                  )}
-                  {canDelete && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                        onDelete(task);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </>
+              <div className="absolute right-0 top-6 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                {canEdit && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onEdit(task);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Edit
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onDelete(task);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -167,7 +183,7 @@ function TaskCard({ task, onEdit, onDelete }) {
         {task.dueDate && (
           <div
             className={`flex items-center space-x-1 text-xs ${
-              isOverdue(task.dueDate) ? 'text-red-600' : 'text-gray-500'
+              isOverdue(task.dueDate) ? "text-red-600" : "text-gray-500"
             }`}
           >
             <Calendar className="w-3 h-3" />
@@ -182,7 +198,7 @@ function TaskCard({ task, onEdit, onDelete }) {
             <div className="flex -space-x-2">
               {task.assignedTo.slice(0, 3).map((assignee, index) => (
                 <div
-                  key={assignee._id}
+                  key={typeof assignee === "string" ? assignee : assignee._id}
                   className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs font-semibold border-2 border-white"
                   title={`${assignee.firstName} ${assignee.lastName}`}
                   style={{ zIndex: task.assignedTo.length - index }}

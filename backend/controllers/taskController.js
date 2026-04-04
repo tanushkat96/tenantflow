@@ -2,255 +2,84 @@ const Task = require("../models/Task");
 const Project = require("../models/Project");
 const {
   notifyTaskAssigned,
-  notifyTaskCompleted,
   notifyTaskStatusChanged,
+  notifyTaskCompleted,
 } = require("../utils/notificationService");
+const { emitToProject, emitToTenant } = require("../config/socket");
 
-// @desc    Get all tasks (filtered by project membership)
-// @route   GET /api/tasks
-// @access  Private
+// Get All Tasks
 exports.getAllTasks = async (req, res) => {
   try {
+    const { projectId } = req.query;
+    const tenantId = req.user.tenantId;
     const userRole = req.user.role;
     const userId = req.user._id;
 
-    let tasks;
+    let query = { tenantId };
 
-    if (userRole === "owner" || userRole === "admin") {
-      // Owner/Admin can see all tasks in tenant
-      tasks = await Task.find({ tenantId: req.user.tenantId })
-        .populate("projectId", "name key color")
-        .populate("assignedTo", "firstName lastName email role")
-        .populate("createdBy", "firstName lastName email")
-        .sort({ createdAt: -1 });
-    } else {
-      // Members/Viewers can only see tasks they're assigned to or created
-      // OR tasks in projects they're members of
-      const Project = require("../models/Project");
-      const projects = await Project.find({
-        tenantId: req.user.tenantId,
-        "members.userId": userId,
-      }).select("_id");
-
-      const projectIds = projects.map((p) => p._id);
-
-      tasks = await Task.find({
-        tenantId: req.user.tenantId,
-        $or: [
-          { assignedTo: userId },
-          { createdBy: userId },
-          { projectId: { $in: projectIds } },
-        ],
-      })
-        .populate("projectId", "name key color")
-        .populate("assignedTo", "firstName lastName email role")
-        .populate("createdBy", "firstName lastName email")
-        .sort({ createdAt: -1 });
+    // Filter by project if provided
+    if (projectId) {
+      query.projectId = projectId;
     }
+
+    // Non-admin/owner users can only see tasks assigned to them or created by them
+    if (userRole !== "owner" && userRole !== "admin") {
+      query.$or = [{ assignedTo: userId }, { createdBy: userId }];
+    }
+
+    const tasks = await Task.find(query)
+      .populate("assignedTo", "firstName lastName email avatar")
+      .populate("createdBy", "firstName lastName email avatar")
+      .populate("updatedBy", "firstName lastName email avatar")
+      .populate("projectId", "name key")
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
       data: tasks,
     });
   } catch (error) {
+    console.error("Get all tasks error:", error);
     res.status(500).json({
       success: false,
-      message: "Error fetching tasks",
+      message: "Failed to fetch tasks",
       error: error.message,
     });
   }
 };
 
-// @desc    Create task
-// @route   POST /api/tasks
-// @access  Private
-exports.createTask = async (req, res) => {
+// Get Single Task
+exports.getTask = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      status,
-      priority,
-      dueDate,
-      projectId,
-      assignedTo,
-      labels,
-    } = req.body;
+    const { id } = req.params;
+    const userId = req.user._id;
     const userRole = req.user.role;
 
-    // ✅ RULE 1: Only Admin/Owner can assign tasks
-    if (assignedTo && assignedTo.length > 0) {
-      if (userRole !== "owner" && userRole !== "admin") {
-        return res.status(403).json({
-          success: false,
-          message: "Only Owners and Admins can assign tasks",
-        });
-      }
-    }
-
-    // Create task
-    const task = await Task.create({
-      tenantId: req.user.tenantId,
-      title,
-      description,
-      status,
-      priority,
-      dueDate,
-      projectId,
-      assignedTo: Array.isArray(assignedTo)
-        ? assignedTo
-        : assignedTo
-          ? [assignedTo]
-          : [],
-      labels,
-      createdBy: req.user._id,
-    });
-
-    // ✅ Update project progress if task is in a project
-    if (projectId) {
-      const project = await Project.findById(projectId);
-      if (project && project.calculateProgress) {
-        await project.calculateProgress();
-        await project.save();
-      }
-    }
-
-    // ✅ Send notifications to all assignees
-    if (assignedTo && assignedTo.length > 0) {
-      const assignees = Array.isArray(assignedTo) ? assignedTo : [assignedTo];
-
-      for (const assigneeId of assignees) {
-        await notifyTaskAssigned({
-          task,
-          assignedTo: assigneeId,
-          assignedBy: req.user._id,
-          tenantId: req.user.tenantId,
-        });
-      }
-    }
-
-    // Populate before sending response
-    await task.populate("assignedTo", "firstName lastName email role");
-    await task.populate("createdBy", "firstName lastName email");
-    await task.populate("projectId", "name key color");
-
-    res.status(201).json({
-      success: true,
-      data: task,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error creating task",
-      error: error.message,
-    });
-  }
-};
-
-// @desc    Update task status (for drag-drop)
-// @route   PATCH /api/tasks/:id/status
-// @access  Private
-exports.updateTaskStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-
-    console.log('Updating task status:', {
-      taskId: req.params.id,
-      newStatus: status,
-      userId: req.user._id,
-      userRole: req.user.role,
-    });
-
-    const task = await Task.findOne({
-      _id: req.params.id,
-      tenantId: req.user.tenantId,
-    });
+    const task = await Task.findById(id)
+      .populate("assignedTo", "firstName lastName email avatar")
+      .populate("createdBy", "firstName lastName email avatar")
+      .populate("updatedBy", "firstName lastName email avatar")
+      .populate("projectId", "name key");
 
     if (!task) {
-      console.log('Task not found');
-      return res.status(404).json({
-        success: false,
-        message: 'Task not found',
-      });
+      return res.status(404).json({ message: "Task not found" });
     }
 
-    // ✅ Check if user can update this task
-    const userId = req.user._id.toString();
-    const userRole = req.user.role;
+    // Check permissions
+    const isAssigned = task.assignedTo.some(
+      (a) => a._id.toString() === userId.toString(),
+    );
+    const isCreator = task.createdBy._id.toString() === userId.toString();
 
-    // ✅ Ensure assignedTo is an array
-    const assignedToArray = Array.isArray(task.assignedTo) 
-      ? task.assignedTo 
-      : task.assignedTo 
-      ? [task.assignedTo] 
-      : [];
-
-    const isAssigned = assignedToArray.some((a) => {
-      const assigneeId = a._id ? a._id.toString() : a.toString();
-      return assigneeId === userId;
-    });
-
-    console.log('Permission check:', {
-      userRole,
-      isAssigned,
-      assignedTo: assignedToArray.length,
-    });
-
-    if (userRole !== 'owner' && userRole !== 'admin' && !isAssigned) {
+    if (
+      userRole !== "owner" &&
+      userRole !== "admin" &&
+      !isAssigned &&
+      !isCreator
+    ) {
       return res.status(403).json({
-        success: false,
-        message: 'You can only update tasks assigned to you',
+        message: "You do not have permission to view this task",
       });
-    }
-
-    const oldStatus = task.status;
-    task.status = status;
-    task.updatedBy = req.user._id;
-    await task.save();
-
-    console.log('Task status updated:', { oldStatus, newStatus: status });
-
-    // ✅ Update project progress
-    if (task.projectId) {
-      try {
-        const Project = require('../models/Project');
-        const project = await Project.findById(task.projectId);
-        if (project && project.calculateProgress) {
-          await project.calculateProgress();
-          await project.save();
-          console.log('Project progress updated');
-        }
-      } catch (progressError) {
-        console.error('Error updating project progress:', progressError);
-        // Don't fail the request if progress update fails
-      }
-    }
-
-    // ✅ Send notification (wrapped in try-catch)
-    try {
-      const {
-        notifyTaskCompleted,
-        notifyTaskStatusChanged,
-      } = require('../utils/notificationService');
-
-      if (status === 'done') {
-        await notifyTaskCompleted({
-          task,
-          completedBy: req.user._id,
-          tenantId: req.user.tenantId,
-        });
-      } else if (oldStatus !== status) {
-        await notifyTaskStatusChanged({
-          task,
-          oldStatus,
-          newStatus: status,
-          changedBy: req.user._id,
-          tenantId: req.user.tenantId,
-        });
-      }
-    } catch (notificationError) {
-      console.error('Error sending notification:', notificationError);
-      // Don't fail the request if notification fails
     }
 
     res.json({
@@ -258,127 +87,338 @@ exports.updateTaskStatus = async (req, res) => {
       data: task,
     });
   } catch (error) {
-    console.error('Error updating task status:', error);
+    console.error("Get task error:", error);
     res.status(500).json({
       success: false,
-      message: 'Error updating task status',
+      message: "Failed to fetch task",
       error: error.message,
     });
   }
 };
 
-// @desc    Delete task
-// @route   DELETE /api/tasks/:id
-// @access  Private (Owner/Admin only)
-exports.deleteTask = async (req, res) => {
+// Create Task
+exports.createTask = async (req, res) => {
   try {
+    const {
+      title,
+      description,
+      priority,
+      status,
+      assignedTo,
+      dueDate,
+      projectId,
+    } = req.body;
+    const userId = req.user._id;
+    const tenantId = req.user.tenantId;
     const userRole = req.user.role;
 
-    if (userRole !== "owner" && userRole !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Only Owners and Admins can delete tasks",
-      });
+    // Check assignment permissions
+    if (assignedTo && assignedTo.length > 0) {
+      if (userRole !== "owner" && userRole !== "admin") {
+        return res.status(403).json({
+          message: "Only Owners and Admins can assign tasks",
+        });
+      }
     }
 
-    const task = await Task.findOneAndDelete({
-      _id: req.params.id,
-      tenantId: req.user.tenantId,
+    // Auto-assign the creator so they can update status on their own tasks
+    let finalAssignees = assignedTo || [];
+    if (userRole !== "owner" && userRole !== "admin") {
+      // Members are always assigned to tasks they create
+      if (!finalAssignees.some((id) => id.toString() === userId.toString())) {
+        finalAssignees = [userId, ...finalAssignees];
+      }
+    }
+
+    const task = await Task.create({
+      title,
+      description,
+      priority: priority || "medium",
+      status: status || "todo",
+      assignedTo: finalAssignees,
+      dueDate,
+      projectId,
+      createdBy: userId,
+      tenantId,
     });
 
-    if (!task) {
-      return res.status(404).json({
-        success: false,
-        message: "Task not found",
-      });
+    const populatedTask = await Task.findById(task._id)
+      .populate("assignedTo", "firstName lastName email avatar")
+      .populate("createdBy", "firstName lastName email avatar")
+      .populate("projectId", "name key");
+
+    // Send notifications to all assignees
+    if (assignedTo && assignedTo.length > 0) {
+      for (const assigneeId of assignedTo) {
+        await notifyTaskAssigned({
+          task: populatedTask,
+          assignedTo: assigneeId,
+          assignedBy: userId,
+        });
+      }
     }
 
-    // ✅ Update project progress
-    if (task.projectId) {
-      const project = await Project.findById(task.projectId);
-      if (project && project.calculateProgress) {
+    // Update project progress
+    if (projectId) {
+      const project = await Project.findById(projectId);
+      if (project) {
         await project.calculateProgress();
         await project.save();
       }
     }
+
+    // 📡 Emit real-time event to project
+    if (projectId) {
+      emitToProject(projectId, "task-created", populatedTask);
+    }
+
+    // 📡 Emit to tenant
+    emitToTenant(tenantId, "task-created", populatedTask);
+
+    res.status(201).json({
+      success: true,
+      data: populatedTask,
+    });
+  } catch (error) {
+    console.error("Create task error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create task",
+      error: error.message,
+    });
+  }
+};
+
+// Update Task Status
+exports.updateTaskStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.user._id;
+    const userRole = req.user.role;
+
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // Check permissions — allow assignees AND the task creator
+    const isAssigned = task.assignedTo.some(
+      (a) => a.toString() === userId.toString(),
+    );
+    const isCreator = task.createdBy.toString() === userId.toString();
+
+    if (userRole !== "owner" && userRole !== "admin" && !isAssigned && !isCreator) {
+      return res.status(403).json({
+        message: "You can only update tasks assigned to or created by you",
+      });
+    }
+
+    const oldStatus = task.status;
+    task.status = status;
+    task.updatedBy = userId;
+    await task.save();
+
+    const populatedTask = await Task.findById(id)
+      .populate("assignedTo", "firstName lastName email avatar")
+      .populate("createdBy", "firstName lastName email avatar")
+      .populate("updatedBy", "firstName lastName email avatar")
+      .populate("projectId", "name key");
+
+    // Notify assignees about status change
+    if (task.assignedTo && task.assignedTo.length > 0) {
+      await notifyTaskStatusChanged({
+        task: populatedTask,
+        assignees: task.assignedTo,
+        changedBy: userId,
+        oldStatus,
+        newStatus: status,
+      });
+    }
+
+    // Notify creator if task is completed
+    if (status === "done") {
+      await notifyTaskCompleted({
+        task: populatedTask,
+        completedBy: userId,
+      });
+    }
+
+    // Update project progress
+    if (task.projectId) {
+      const project = await Project.findById(task.projectId);
+      if (project) {
+        await project.calculateProgress();
+        await project.save();
+
+        // 📡 Emit project progress update
+        emitToProject(task.projectId, "project-progress-updated", {
+          projectId: task.projectId,
+          progress: project.progress,
+        });
+      }
+    }
+
+    // 📡 Emit real-time status update
+    if (task.projectId) {
+      emitToProject(task.projectId, "task-status-updated", populatedTask);
+    }
+    emitToTenant(task.tenantId, "task-status-updated", populatedTask);
+
+    res.json({
+      success: true,
+      data: populatedTask,
+    });
+  } catch (error) {
+    console.error("Update task status error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update task status",
+      error: error.message,
+    });
+  }
+};
+
+// Delete Task
+exports.deleteTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const userRole = req.user.role;
+
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // Allow owner, admin, or the task creator to delete
+    const isCreator = task.createdBy.toString() === userId.toString();
+    if (userRole !== "owner" && userRole !== "admin" && !isCreator) {
+      return res.status(403).json({
+        message: "Only Owners, Admins, or the task creator can delete tasks",
+      });
+    }
+
+    const projectId = task.projectId;
+    const tenantId = task.tenantId;
+
+    await Task.findByIdAndDelete(id);
+
+    // Update project progress
+    if (projectId) {
+      const project = await Project.findById(projectId);
+      if (project) {
+        await project.calculateProgress();
+        await project.save();
+
+        // 📡 Emit project progress update
+        emitToProject(projectId, "project-progress-updated", {
+          projectId,
+          progress: project.progress,
+        });
+      }
+    }
+
+    // 📡 Emit task deleted event
+    if (projectId) {
+      emitToProject(projectId, "task-deleted", { taskId: id });
+    }
+    emitToTenant(tenantId, "task-deleted", { taskId: id });
 
     res.json({
       success: true,
       message: "Task deleted successfully",
     });
   } catch (error) {
+    console.error("Delete task error:", error);
     res.status(500).json({
       success: false,
-      message: "Error deleting task",
+      message: "Failed to delete task",
       error: error.message,
     });
   }
 };
 
-// @desc    Update task status (for drag-drop)
-// @route   PATCH /api/tasks/:id/status
-// @access  Private
-exports.updateTaskStatus = async (req, res) => {
+// Update Task
+exports.updateTask = async (req, res) => {
   try {
-    const { status } = req.body;
-
-    const task = await Task.findOne({
-      _id: req.params.id,
-      tenantId: req.user.tenantId,
-    });
-
-    if (!task) {
-      return res.status(404).json({
-        success: false,
-        message: "Task not found",
-      });
-    }
-
-    // ✅ Check if user can update this task
-    const userId = req.user._id.toString();
+    const { id } = req.params;
+    const { title, description, priority, status, assignedTo, dueDate } = req.body;
+    const userId = req.user._id;
     const userRole = req.user.role;
-    const isAssigned = task.assignedTo.some((a) => a.toString() === userId);
 
-    if (userRole !== "owner" && userRole !== "admin" && !isAssigned) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only update tasks assigned to you",
-      });
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
     }
 
-    const oldStatus = task.status;
-    task.status = status;
-    task.updatedBy = req.user._id;
+    // Check permissions - only owner, admin, or task creator can update
+   const isCreator = task.createdBy.toString() === userId.toString();
+
+const isAssigned = task.assignedTo.some(
+  (a) => a.toString() === userId.toString()
+);
+
+if (
+  userRole !== "owner" &&
+  userRole !== "admin" &&
+  !isCreator &&
+  !isAssigned
+) {
+  return res.status(403).json({
+    message:
+      "Only assigned members, task creator, Owners, and Admins can update tasks",
+  });
+}
+
+    // If reassigning, check permissions
+   if (assignedTo) {
+  const current = task.assignedTo.map((a) => a.toString());
+  const incoming = assignedTo.map((a) => a.toString());
+
+  const isSame =
+    current.length === incoming.length &&
+    current.every((id) => incoming.includes(id));
+
+  if (!isSame && userRole !== "owner" && userRole !== "admin") {
+    return res.status(403).json({
+      message: "Only Owners and Admins can reassign tasks",
+    });
+  }
+}
+
+    // Update fields
+    if (title) task.title = title;
+    if (description !== undefined) task.description = description;
+    if (priority) task.priority = priority;
+    if (status) task.status = status;  // ✅ Allow assigned members to update status via modal
+    if (assignedTo) task.assignedTo = assignedTo;
+    if (dueDate) task.dueDate = dueDate;
+    task.updatedBy = userId;
+
     await task.save();
 
-    // ✅ Update project progress
-    if (task.projectId) {
-      const project = await Project.findById(task.projectId);
-      if (project && project.calculateProgress) {
-        await project.calculateProgress();
-        await project.save();
-      }
-    }
+    const populatedTask = await Task.findById(id)
+      .populate("assignedTo", "firstName lastName email avatar")
+      .populate("createdBy", "firstName lastName email avatar")
+      .populate("updatedBy", "firstName lastName email avatar")
+      .populate("projectId", "name key");
 
-    // ✅ Send notification
-    if (status === "done") {
-      await notifyTaskCompleted({
-        task,
-        completedBy: req.user._id,
-        tenantId: req.user.tenantId,
-      });
-    } else if (oldStatus !== status) {
-      await notifyTaskStatusChanged(task, oldStatus, status, req.user);
+    // 📡 Emit real-time update
+    if (task.projectId) {
+      emitToProject(task.projectId, "task-updated", populatedTask);
     }
+    emitToTenant(task.tenantId, "task-updated", populatedTask);
 
     res.json({
       success: true,
-      data: task,
+      data: populatedTask,
     });
   } catch (error) {
+    console.error("Update task error:", error);
     res.status(500).json({
       success: false,
-      message: "Error updating task status",
+      message: "Failed to update task",
       error: error.message,
     });
   }

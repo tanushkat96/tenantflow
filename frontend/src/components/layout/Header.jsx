@@ -2,11 +2,13 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../redux/slices/authSlice";
 import { Bell, Search, LogOut, ArrowRight} from "lucide-react";
+import NotificationBell from '../notifications/NotificationBell';
 
 function Header() {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
 
   const handleLogout = () => {
     dispatch(logout());
@@ -36,12 +38,9 @@ function Header() {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center space-x-3 flex-shrink-0">
-          {/* Notifications */}
-          <button className="relative p-2.5 rounded-xl hover:bg-purple-50 transition-all transform hover:scale-110 group">
-            <Bell className="w-5 h-5 text-gray-700 group-hover:text-purple-600 transition-colors" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse ring-2 ring-white" />
-          </button>
+         <div className="flex items-center space-x-4">
+          {/* 🔔 Notification Bell */}
+          <NotificationBell />
 
           {/* Logout Button */}
           <button

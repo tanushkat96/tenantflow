@@ -58,7 +58,7 @@ exports.register = async (req, res) => {
       data: {
         token,
         user: {
-          id: user._id,
+          _id: user._id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -130,7 +130,7 @@ exports.login = async (req, res) => {
       data: {
         token,
         user: {
-          id: user._id,
+          _id: user._id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,

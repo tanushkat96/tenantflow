@@ -1,12 +1,21 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+// Ensure user object always has _id regardless of backend response format (id vs _id)
+const normalizeUser = (user) => {
+  if (!user) return null;
+  return {
+    ...user,
+    _id: user._id || user.id, // backend sometimes sends 'id' instead of '_id'
+  };
+};
+
 const getStoredUser = () => {
   try {
     const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
+    return stored ? normalizeUser(JSON.parse(stored)) : null;
   } catch (error) {
     console.error('Error parsing stored user:', error);
-    localStorage.removeItem('user'); // Clear corrupted data
+    localStorage.removeItem('user');
     return null;
   }
 };
@@ -29,12 +38,12 @@ const authSlice = createSlice({
     loginSuccess: (state, action) => {
       state.loading = false;
       state.isAuthenticated = true;
-      state.user = action.payload.user;
+      state.user = normalizeUser(action.payload.user);
       state.token = action.payload.token;
       state.error = null;
       // Save token and user to localStorage
       localStorage.setItem("token", action.payload.token);
-      localStorage.setItem("user", JSON.stringify(action.payload.user));
+      localStorage.setItem("user", JSON.stringify(state.user));
     },
     loginFailure: (state, action) => {
       state.loading = false;
