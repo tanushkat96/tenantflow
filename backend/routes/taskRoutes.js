@@ -34,6 +34,23 @@ router.post(
   uploadTaskAttachments
 );
 router.delete("/:id/attachments/:filename", protect, deleteTaskAttachment);
+const ActivityLog = require('../models/ActivityLog');
 
+// GET /api/tasks/:id/activity
+router.get('/:id/activity', protect, async (req, res) => {
+  try {
+    const activities = await ActivityLog.find({
+      taskId:   req.params.id,
+      tenantId: req.user.tenantId,
+    })
+      .populate('userId', 'firstName lastName avatar')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json({ success: true, data: activities });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 module.exports = router;
 

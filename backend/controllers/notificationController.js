@@ -1,5 +1,9 @@
 const Notification = require("../models/Notification");
-
+const {
+  markAsRead,
+  markAllAsRead,
+  getUnreadCount,
+} = require('../utils/notificationService');
 // @desc    Get user notifications
 // @route   GET /api/notifications
 // @access  Private

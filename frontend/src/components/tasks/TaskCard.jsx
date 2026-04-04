@@ -1,12 +1,22 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Calendar, MoreVertical, Tag, Users, Paperclip } from "lucide-react";
+import {
+  Calendar,
+  MoreVertical,
+  Tag,
+  Users,
+  Paperclip,
+  X,
+  Download,
+  Eye,
+} from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 
 function TaskCard({ task, onEdit, onDelete }) {
   const { user: currentUser } = useSelector((state) => state.auth);
   const [showMenu, setShowMenu] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
   const menuRef = useRef(null);
 
   // Close menu when clicking outside
@@ -26,10 +36,12 @@ function TaskCard({ task, onEdit, onDelete }) {
 
   // Handle both populated objects and plain ObjectId strings
   const isAssigned =
-    userId && task.assignedTo?.some((a) => {
-      const assigneeId = typeof a === "string" ? a : a._id;
-      return String(assigneeId) === String(userId);
-    }) || false;
+    (userId &&
+      task.assignedTo?.some((a) => {
+        const assigneeId = typeof a === "string" ? a : a._id;
+        return String(assigneeId) === String(userId);
+      })) ||
+    false;
 
   const createdById =
     typeof task.createdBy === "string" ? task.createdBy : task.createdBy?._id;
@@ -37,8 +49,7 @@ function TaskCard({ task, onEdit, onDelete }) {
 
   const canEdit =
     userRole === "owner" || userRole === "admin" || isAssigned || isCreator;
-  const canDelete =
-    userRole === "owner" || userRole === "admin" || isCreator;
+  const canDelete = userRole === "owner" || userRole === "admin" || isCreator;
 
   const {
     attributes,
@@ -91,14 +102,18 @@ function TaskCard({ task, onEdit, onDelete }) {
 
         {/* Three Dots Menu */}
         {(canEdit || canDelete) && (
-          <div className="relative" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative"
+            ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
               className={`p-1 rounded hover:bg-gray-100 transition ${
-                showMenu ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                showMenu ? "opacity-100" : "opacity-80 group-hover:opacity-100"
               }`}
             >
               <MoreVertical className="w-4 h-4 text-gray-400" />
@@ -115,7 +130,7 @@ function TaskCard({ task, onEdit, onDelete }) {
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
-                    Edit
+                    Updates
                   </button>
                 )}
                 {canDelete && (
@@ -217,13 +232,110 @@ function TaskCard({ task, onEdit, onDelete }) {
         )}
       </div>
 
-      {/* Attachments badge */}
+      {/* Attachments button */}
       {task.attachments && task.attachments.length > 0 && (
-        <div className="flex items-center space-x-1 mt-2 pt-2 border-t border-gray-100">
-          <Paperclip className="w-3 h-3 text-gray-400" />
-          <span className="text-xs text-gray-500">
-            {task.attachments.length} attachment{task.attachments.length > 1 ? "s" : ""}
+        <button
+          onClick={() => setShowAttachments(true)}
+          className="flex items-center space-x-1 mt-2 pt-2 border-t border-gray-100 w-full hover:text-blue-600 transition text-gray-600 group/attachments"
+        >
+          <Paperclip className="w-3 h-3" />
+          <span className="text-xs font-medium">
+            {task.attachments.length} attachment
+            {task.attachments.length > 1 ? "s" : ""}
           </span>
+        </button>
+      )}
+
+      {/* Attachments Modal */}
+      {showAttachments && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Task Attachments ({task.attachments.length})
+              </h3>
+              <button
+                onClick={() => setShowAttachments(false)}
+                className="p-1 hover:bg-gray-100 rounded transition"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Attachments List */}
+            <div className="p-6 space-y-3">
+              {task.attachments.map((attachment, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                >
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <Paperclip className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {attachment.originalName || attachment.filename}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {attachment.size
+                          ? `${(attachment.size / 1024).toFixed(2)} KB`
+                          : "Size unknown"}
+                        {attachment.uploadedAt && (
+                          <>
+                            {" "}
+                            •{" "}
+                            {new Date(
+                              attachment.uploadedAt,
+                            ).toLocaleDateString()}
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                    {/* View button for images */}
+                    {attachment.mimetype?.startsWith("image") && (
+                      <a
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 hover:bg-blue-100 text-blue-600 rounded transition"
+                        title="View image"
+                        onClick={(e) => {
+                          if (!attachment.url) {
+                            e.preventDefault();
+                            alert("Image URL not available");
+                          }
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </a>
+                    )}
+                    {/* Download button */}
+                    <button
+                      onClick={() => {
+                        if (!attachment.url) {
+                          alert("Download URL not available");
+                          return;
+                        }
+                        const link = document.createElement("a");
+                        link.href = attachment.url;
+                        link.download =
+                          attachment.originalName || attachment.filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="p-2 hover:bg-green-100 text-green-600 rounded transition"
+                      title="Download attachment"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

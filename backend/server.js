@@ -15,6 +15,7 @@ const userRoutes = require("./routes/userRoutes");
 const path = require("path");
 const settingsRoutes = require("./routes/settingsRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const commentRoutes = require('./routes/commentRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -66,6 +67,7 @@ app.use("/api/users", userRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use('/api/comments', commentRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

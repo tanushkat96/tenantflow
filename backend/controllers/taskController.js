@@ -6,6 +6,7 @@ const {
   notifyTaskCompleted,
 } = require("../utils/notificationService");
 const { emitToProject, emitToTenant } = require("../config/socket");
+const { logActivity } = require("../utils/activityService");
 
 // Get All Tasks
 exports.getAllTasks = async (req, res) => {
@@ -166,6 +167,15 @@ exports.createTask = async (req, res) => {
         await project.save();
       }
     }
+    await logActivity({
+      taskId: task._id,
+      projectId: task.projectId,
+      tenantId: task.tenantId,
+      userId: req.user._id,
+      type: "created",
+      description: `created this task`,
+      changes: null,
+    });
 
     // 📡 Emit real-time event to project
     if (projectId) {
@@ -208,7 +218,12 @@ exports.updateTaskStatus = async (req, res) => {
     );
     const isCreator = task.createdBy.toString() === userId.toString();
 
-    if (userRole !== "owner" && userRole !== "admin" && !isAssigned && !isCreator) {
+    if (
+      userRole !== "owner" &&
+      userRole !== "admin" &&
+      !isAssigned &&
+      !isCreator
+    ) {
       return res.status(403).json({
         message: "You can only update tasks assigned to or created by you",
       });
@@ -224,6 +239,19 @@ exports.updateTaskStatus = async (req, res) => {
       .populate("createdBy", "firstName lastName email avatar")
       .populate("updatedBy", "firstName lastName email avatar")
       .populate("projectId", "name key");
+
+    // Log activity for status change
+    if (oldStatus !== status) {
+      await logActivity({
+        taskId: id,
+        projectId: task.projectId,
+        tenantId: task.tenantId,
+        userId: userId,
+        type: "status_change",
+        description: `changed status from ${oldStatus} to ${status}`,
+        changes: { from: oldStatus, to: status },
+      });
+    }
 
     // Notify assignees about status change
     if (task.assignedTo && task.assignedTo.length > 0) {
@@ -343,7 +371,8 @@ exports.deleteTask = async (req, res) => {
 exports.updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, priority, status, assignedTo, dueDate } = req.body;
+    const { title, description, priority, status, assignedTo, dueDate } =
+      req.body;
     const userId = req.user._id;
     const userRole = req.user.role;
 
@@ -353,50 +382,78 @@ exports.updateTask = async (req, res) => {
     }
 
     // Check permissions - only owner, admin, or task creator can update
-   const isCreator = task.createdBy.toString() === userId.toString();
+    const isCreator = task.createdBy.toString() === userId.toString();
 
-const isAssigned = task.assignedTo.some(
-  (a) => a.toString() === userId.toString()
-);
+    const isAssigned = task.assignedTo.some(
+      (a) => a.toString() === userId.toString(),
+    );
 
-if (
-  userRole !== "owner" &&
-  userRole !== "admin" &&
-  !isCreator &&
-  !isAssigned
-) {
-  return res.status(403).json({
-    message:
-      "Only assigned members, task creator, Owners, and Admins can update tasks",
-  });
-}
+    if (
+      userRole !== "owner" &&
+      userRole !== "admin" &&
+      !isCreator &&
+      !isAssigned
+    ) {
+      return res.status(403).json({
+        message:
+          "Only assigned members, task creator, Owners, and Admins can update tasks",
+      });
+    }
 
     // If reassigning, check permissions
-   if (assignedTo) {
-  const current = task.assignedTo.map((a) => a.toString());
-  const incoming = assignedTo.map((a) => a.toString());
+    if (assignedTo) {
+      const current = task.assignedTo.map((a) => a.toString());
+      const incoming = assignedTo.map((a) => a.toString());
 
-  const isSame =
-    current.length === incoming.length &&
-    current.every((id) => incoming.includes(id));
+      const isSame =
+        current.length === incoming.length &&
+        current.every((id) => incoming.includes(id));
 
-  if (!isSame && userRole !== "owner" && userRole !== "admin") {
-    return res.status(403).json({
-      message: "Only Owners and Admins can reassign tasks",
-    });
-  }
-}
+      if (!isSame && userRole !== "owner" && userRole !== "admin") {
+        return res.status(403).json({
+          message: "Only Owners and Admins can reassign tasks",
+        });
+      }
+    }
 
     // Update fields
+    const originalTask = JSON.parse(JSON.stringify(task)); // Deep copy original values
+
     if (title) task.title = title;
     if (description !== undefined) task.description = description;
     if (priority) task.priority = priority;
-    if (status) task.status = status;  // ✅ Allow assigned members to update status via modal
+    if (status) task.status = status; // ✅ Allow assigned members to update status via modal
     if (assignedTo) task.assignedTo = assignedTo;
     if (dueDate) task.dueDate = dueDate;
     task.updatedBy = userId;
 
     await task.save();
+
+    // Log status change
+    if (status && status !== originalTask.status) {
+      await logActivity({
+        taskId: id,
+        projectId: task.projectId,
+        tenantId: task.tenantId,
+        userId: userId,
+        type: "status_change",
+        description: `changed status to ${status}`,
+        changes: { from: originalTask.status, to: status },
+      });
+    }
+
+    // Log priority change
+    if (priority && priority !== originalTask.priority) {
+      await logActivity({
+        taskId: id,
+        projectId: task.projectId,
+        tenantId: task.tenantId,
+        userId: userId,
+        type: "priority_change",
+        description: `changed priority to ${priority}`,
+        changes: { from: originalTask.priority, to: priority },
+      });
+    }
 
     const populatedTask = await Task.findById(id)
       .populate("assignedTo", "firstName lastName email avatar")
@@ -442,7 +499,7 @@ exports.uploadTaskAttachments = async (req, res) => {
     // Permission: creator, assigned, owner, admin
     const isCreator = task.createdBy.toString() === userId.toString();
     const isAssigned = task.assignedTo.some(
-      (a) => a.toString() === userId.toString()
+      (a) => a.toString() === userId.toString(),
     );
     if (
       userRole !== "owner" &&
@@ -512,7 +569,7 @@ exports.deleteTaskAttachment = async (req, res) => {
     // Permission: creator, assigned, owner, admin
     const isCreator = task.createdBy.toString() === userId.toString();
     const isAssigned = task.assignedTo.some(
-      (a) => a.toString() === userId.toString()
+      (a) => a.toString() === userId.toString(),
     );
     if (
       userRole !== "owner" &&
@@ -526,7 +583,7 @@ exports.deleteTaskAttachment = async (req, res) => {
     }
 
     const attachmentIndex = task.attachments.findIndex(
-      (a) => a.filename === filename
+      (a) => a.filename === filename,
     );
     if (attachmentIndex === -1) {
       return res.status(404).json({ message: "Attachment not found" });
@@ -564,4 +621,3 @@ exports.deleteTaskAttachment = async (req, res) => {
     });
   }
 };
-
